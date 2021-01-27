@@ -1,0 +1,10 @@
+{
+	"name": "nuc",
+	"url": "https://github.com/denuc/nuc",
+	"license": "MIT",
+	"tags": ["game", "engine", "framework", "cross", "2d", "nuc"],
+	"description": "2d game framework",
+	"version": "0.0.1",
+	"releasenote": "",
+	"contributors": ["RudenkoArts"]
+}
