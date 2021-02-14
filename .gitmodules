@@ -1,0 +1,3 @@
+[submodule "tools/nucli"]
+	path = tools/nucli
+	url = https://github.com/denuca/nucli
