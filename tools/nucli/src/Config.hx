@@ -66,7 +66,7 @@ class Config {
 		if(project.defines != null) {
 			for (s in project.defines) {
 				kfile += 'p.addDefine("${s}");\n';
-				if(s == 'no_default_font') {
+				if(s == 'nuc_no_default_font') {
 					noDefaultFont = true;
 				}
 			}
@@ -85,7 +85,7 @@ class Config {
 		}
 
 		if(!noDefaultFont) {
-			var fp = Path.join([CLI.engineDir, 'assets/fonts']);
+			var fp = Path.join([CLI.engineDir, 'resources/fonts']);
 			kfile += 'p.addAssets("${fp}", {destination: "$destPath", noprocessing: true, notinlist: true});\n';
 		}
 

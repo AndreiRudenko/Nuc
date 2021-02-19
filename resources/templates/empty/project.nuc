@@ -1,0 +1,58 @@
+<project>
+title: 'project_title'
+authors: []
+description : ''
+version: '1.0.0'
+sources: ['src']
+assets: ['assets']
+defines: []
+shaders: []
+libraries: []
+
+<input>
+mouse: true
+keyboard: true
+gamepad: true
+touch: true
+pen: false
+
+<app>
+name: 'app_name'
+icon: ''
+
+<android>
+package: 'com.package.name'
+orientation: 'sensor'
+permissions: []
+version_code: 1
+installLocation: 'internalOnly'
+arch: 'arm7'
+
+<ios>
+bundle: 'tech.kode.$(PRODUCT_NAME:rfc1034identifier)'
+build: 1
+organizationName: ''
+developmentTeam: ''
+
+<html5>
+webgl: true
+canvas: 'kanvas'
+script: 'game'
+width: 800
+height: 600
+serverPort: 8080
+htmlFile: ''
+favicon: ''
+minify: false
+
+<windows>
+graphics: 'direct3d11'
+
+<compiler>
+output: 'build'
+main: 'Main'
+parameters: ['-dce full']
+options: ['']
+haxe: ''
+kha: ''
+ffmpeg: ''
