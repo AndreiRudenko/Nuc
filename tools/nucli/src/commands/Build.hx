@@ -35,6 +35,7 @@ class Build extends Command {
 		config.onlydata = false;
 		config.compile = false;
 		config.watch = false;
+		config.nohaxe = false;
 
 		for (a in args) {
 			switch (a) {
@@ -43,6 +44,7 @@ class Build extends Command {
 				case '--noshaders': config.noshaders = true;
 				case '--compile': config.compile = true;
 				case '--watch': config.watch = true;
+				case '--nohaxe': config.nohaxe = true;
 			}
 		}
 
@@ -177,6 +179,7 @@ class Build extends Command {
 		if(config.compile) args.push('--compile');
 		if(config.onlydata) args.push('--onlydata');
 		if(config.noshaders) args.push('--noshaders');
+		if(config.nohaxe) args.push('--nohaxe');
 		
 		CLI.print('Run build command: ${args.join(" ")}');
 		var res:Int = 0; 

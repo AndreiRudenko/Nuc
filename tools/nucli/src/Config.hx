@@ -195,6 +195,7 @@ typedef ConfigData = {
 	var onlydata:Bool;
 	var compile:Bool;
 	var noshaders:Bool;
+	var nohaxe:Bool;
 }
 
 typedef InputConfig = {
