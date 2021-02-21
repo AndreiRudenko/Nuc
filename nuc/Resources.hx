@@ -30,8 +30,7 @@ class Resources {
 	function new() {
 		_textureExt = kha.Assets.imageFormats;
 		_audioExt = kha.Assets.soundFormats;
-		_videoExt = [];
-		// _videoExt = kha.Assets.videoFormats; // TODO: bug on hl
+		_videoExt = kha.Assets.videoFormats;
 		_fontExt = kha.Assets.fontFormats;
 
 		// _ids = new IdGenerator();
@@ -51,11 +50,9 @@ class Resources {
 		unloadAll();
 	}
 
-	public function loadAll(arr:Array<String>, onComplete:()->Void, ?onProgress:(p:Float)->Void) {
+	public function loadAll(arr:Array<String>, onComplete:()->Void, ?onProgress:(p:Float)->Void, uncompressAudio:Bool = true) {
 		if(arr.length == 0) {
-			if(onProgress != null) {
-				onProgress(1);
-			}
+			if(onProgress != null) onProgress(1);
 			onComplete();
 			return;
 		}
@@ -73,12 +70,10 @@ class Resources {
 			left--;
 			progress = 1 - left / count;
 
-			if(onProgress != null) {
-				onProgress(progress);
-			}
-
+			if(onProgress != null) onProgress(progress);
+			
 			if(i < count) {
-				load(arr[i], cb);
+				load(arr[i], cb, uncompressAudio);
 			} else {
 				onComplete();
 			}
@@ -95,40 +90,24 @@ class Resources {
 		cache = new Map();
 	}
 
-	public function load(name:String, ?onComplete:(r:Resource)->Void) {
+	public function load(name:String, ?onComplete:(r:Resource)->Void, uncompressAudio:Bool = true) {
 		var res = cache.get(name);
 		if(res != null) {
 			Log.warning("resource already exists: " + name);
-			if(onComplete != null) {
-				onComplete(res);
-			}
+			if(onComplete != null) onComplete(res);
 			return;
 		}
 
 		var ext = Path.extension(name);
 
 		switch (ext) {
-			case e if (_textureExt.indexOf(e) != -1):{
-				loadTexture(name, onComplete);
-			}
-			case e if (_fontExt.indexOf(e) != -1):{
-				loadFont(name, onComplete);
-			}
-			case e if (_audioExt.indexOf(e) != -1):{
-				loadAudio(name, onComplete);
-			}
-			case e if (_videoExt.indexOf(e) != -1):{
-				loadVideo(name, onComplete);
-			}
-			case "json":{
-				loadJson(name, onComplete);
-			}
-			case "txt":{
-				loadText(name, onComplete);
-			}
-			default:{
-				loadBytes(name, onComplete);
-			}
+			case e if (_textureExt.indexOf(e) != -1): loadTexture(name, onComplete);
+			case e if (_fontExt.indexOf(e) != -1): loadFont(name, onComplete);
+			case e if (_audioExt.indexOf(e) != -1): loadAudio(name, onComplete, uncompressAudio);
+			case e if (_videoExt.indexOf(e) != -1): loadVideo(name, onComplete);
+			case "json": loadJson(name, onComplete);
+			case "txt": loadText(name, onComplete);
+			default: loadBytes(name, onComplete);
 		}
 	}
 
