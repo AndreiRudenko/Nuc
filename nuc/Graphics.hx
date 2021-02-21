@@ -19,8 +19,10 @@ import nuc.graphics.Color;
 
 import nuc.math.FastMatrix3;
 import nuc.math.Vector2;
+import nuc.math.FastVector2;
 import nuc.math.Rectangle;
 
+import nuc.utils.Math;
 import nuc.utils.Float32Array;
 import nuc.utils.Uint32Array;
 // import nuc.utils.Int16Array;
@@ -124,7 +126,7 @@ class Graphics {
 
 	static public function blit(src:Texture, ?dst:Texture, ?pipeline:Pipeline, 
 		clearDst:Bool = true, bilinear:Bool = true,
-		scaleX:Float = 1, scaleY:Float = 1, offsetX:Float = 0, offsetY:Float = 0
+		scaleX:FastFloat = 1, scaleY:FastFloat = 1, offsetX:FastFloat = 0, offsetY:FastFloat = 0
 	) {
 		var g:kha.graphics4.Graphics;
 		if(dst != null) {
@@ -202,7 +204,7 @@ class Graphics {
 		indexBuffer.unlock();
 	}
 
-	static function setBlitVertices(x:Float, y:Float, w:Float, h:Float) {		
+	static function setBlitVertices(x:FastFloat, y:FastFloat, w:FastFloat, h:FastFloat) {		
 		var vertices = vertexBuffer.lock();
 		vertices[0] = x;
 		vertices[1] = y;
@@ -273,27 +275,6 @@ class Graphics {
 		return _opacity = v;
 	}
 
-	public var lineWidth(get, set):Float;
-	var _lineWidth:Float = 4;
-	inline function get_lineWidth() return _lineWidth; 
-	function set_lineWidth(v:Float):Float {
-		return _lineWidth = v;
-	}
-
-	public var lineJoint(get, set):LineJoint;
-	var _lineJoint:LineJoint = LineJoint.BEVEL;
-	inline function get_lineJoint() return _lineJoint; 
-	function set_lineJoint(v:LineJoint):LineJoint {
-		return _lineJoint = v;
-	}
-
-	public var lineCap(get, set):LineCap;
-	var _lineCap:LineCap = LineCap.BUTT;
-	inline function get_lineCap() return _lineCap; 
-	function set_lineCap(v:LineCap):LineCap {
-		return _lineCap = v;
-	}
-
 	public var textureFilter(get, set):TextureFilter;
 	var _textureFilter:TextureFilter = TextureFilter.PointFilter;
 	inline function get_textureFilter() return _textureFilter; 
@@ -318,18 +299,56 @@ class Graphics {
 		return _textureAddressing = v;
 	}
 
+	public var lineWidth(get, set):Float;
+	var _lineWidth:Float = 4;
+	inline function get_lineWidth() return _lineWidth; 
+	function set_lineWidth(v:Float):Float {
+		return _lineWidth = v;
+	}
+
+	public var lineJoint(get, set):LineJoint;
+	var _lineJoint:LineJoint = LineJoint.BEVEL;
+	inline function get_lineJoint() return _lineJoint; 
+	function set_lineJoint(v:LineJoint):LineJoint {
+		return _lineJoint = v;
+	}
+
+	public var lineCap(get, set):LineCap;
+	var _lineCap:LineCap = LineCap.BUTT;
+	inline function get_lineCap() return _lineCap; 
+	function set_lineCap(v:LineCap):LineCap {
+		return _lineCap = v;
+	}
+
+	public var segmentSmooth(default, set):Float = 5;
+	function set_segmentSmooth(v:Float) {
+		segmentSmooth = Math.max(1, v);
+		return segmentSmooth;
+	}
+
+	public var miterMinAngle(default, set):Float = 10; // degrees
+	function set_miterMinAngle(v:Float) {
+		miterMinAngle = Math.clamp(v, 0.01, 180);
+		_miterMinAngleRadians = miterMinAngle / 180;
+		return miterMinAngle;
+	}
+
+	var _miterMinAngleRadians:Float = 10/180;
+
+
 	var _renderer:Renderer;
 	var _projection:FastMatrix3;
-	// var _states:Array<GraphicsState>;
-	// var _savedState:GraphicsState;
+
+	var _savedState:GraphicsState;
+	var _wasSaved:Bool = false;
 
 	var _scissorStack:Array<Rectangle>;
 	var _transformStack:Array<FastMatrix3>;
 	var _opacityStack:Array<Float>;
 
-	var _statesPool:DynamicPool<GraphicsState>;
 	var _scissorPool:DynamicPool<Rectangle>;
 	var _transformPool:DynamicPool<FastMatrix3>;
+	var _polySegmentPool:DynamicPool<PolySegment>;
 
 	var _invertseTransform:FastMatrix3;
 	var _invertseTransformDirty:Bool = true;
@@ -357,6 +376,7 @@ class Graphics {
 	var _textureFormat:TextureFormat = TextureFormat.RGBA32;
 
 	// var _textureIdSet:Int16Array;
+	var _lastTexture:Texture;
 	var _textures:haxe.ds.Vector<Texture>;
 	var _texturesCount:Int = 0;
 	
@@ -385,10 +405,11 @@ class Graphics {
 		_transformStack = [];
 		_opacityStack = [];
 
-		_statesPool = new DynamicPool<GraphicsState>(16, function() { return new GraphicsState(); });
+		_polySegmentPool = new DynamicPool<PolySegment>(64, function() { return new PolySegment(); });
 		_scissorPool = new DynamicPool<Rectangle>(16, function() { return new Rectangle(); });
 		_transformPool = new DynamicPool<FastMatrix3>(16, function() { return new FastMatrix3(); });
 
+		_lastTexture = null;
 		// _textureIdSet = new Int16Array(Texture.maxTextures);
 		_textures = new haxe.ds.Vector(Graphics.maxShaderTextures);
 
@@ -397,6 +418,9 @@ class Graphics {
 
 		_invertseTransform = new FastMatrix3();
 		_bakedQuadCache = new AlignedQuad();
+
+		_savedState = new GraphicsState();
+		_wasSaved = false;
 
 		stats = new RenderStats();
 	}
@@ -417,7 +441,6 @@ class Graphics {
 		_transformStack = null;
 		_opacityStack = null;
 
-		_statesPool = null;
 		_scissorPool = null;
 		_transformPool = null;
 	}
@@ -477,8 +500,65 @@ class Graphics {
 		stats.drawCalls++;
 	}
 
-	// public function save() {}
-	// public function restore() {}
+	public function save() {
+		_savedState.target = _target;
+		_savedState.pipeline = _pipeline;
+		_savedState.transform.copyFrom(_transform);
+
+		_savedState.color = _color;
+		_savedState.opacity = _opacity;
+
+		_savedState.textureFilter = _textureFilter;
+		_savedState.textureMipFilter = _textureMipFilter;
+		_savedState.textureAddressing = _textureAddressing;
+
+		_savedState.lineWidth = _lineWidth;
+		_savedState.lineJoint = _lineJoint;
+		_savedState.lineCap = _lineCap;
+
+		_savedState.segmentSmooth = _segmentSmooth;
+		_savedState.miterMinAngle = _miterMinAngle;
+
+		if(_scissor != null) {
+			_savedState.useScissor = true;
+			_savedState.scissor.copyFrom(_scissor);
+		} else {
+			_savedState.useScissor = false;
+		}
+
+		_wasSaved = true;
+
+		flush();
+	}
+
+	public function restore() {		
+		_target = _savedState.target;
+		_pipeline = _savedState.pipeline;
+		_transform.copyFrom(_savedState.transform);
+
+		_color = _savedState.color;
+		_opacity = _savedState.opacity;
+
+		_textureFilter = _savedState.textureFilter;
+		_textureMipFilter = _savedState.textureMipFilter;
+		_textureAddressing = _savedState.textureAddressing;
+
+		_lineWidth = _savedState.lineWidth;
+		_lineJoint = _savedState.lineJoint;
+		_lineCap = _savedState.lineCap;
+
+		_segmentSmooth = _savedState.segmentSmooth;
+		_miterMinAngle = _savedState.miterMinAngle;
+
+		if(_savedState.useScissor != null) {
+			_scissor.copyFrom(_savedState.scissor);
+		}
+
+		_wasSaved = false;
+
+		flush();
+	}
+
 	// public function reset() {}
 
 	// scissor
@@ -526,22 +606,22 @@ class Graphics {
 		onTransformUpdate();
 	}
 
-	public function translate(x:Float, y:Float) {
+	public function translate(x:FastFloat, y:FastFloat) {
 		_transform.translate(x, y);
 		onTransformUpdate();
 	}
 
-	public function prependTranslate(x:Float, y:Float) {
+	public function prependTranslate(x:FastFloat, y:FastFloat) {
 		_transform.prependTranslate(x, y);
 		onTransformUpdate();
 	}
 
-	public function scale(x:Float, y:Float) {
+	public function scale(x:FastFloat, y:FastFloat) {
 		_transform.scale(x, y);
 		onTransformUpdate();
 	}
 
-	public function rotate(radians:Float, ox:Float = 0, oy:Float = 0) {
+	public function rotate(radians:FastFloat, ox:FastFloat = 0, oy:FastFloat = 0) {
 		if(radians == 0) return;
 		
 		if(ox != 0 || oy != 0) {
@@ -556,7 +636,7 @@ class Graphics {
 		}
 		onTransformUpdate();
 	}
-	public function shear(x:Float, y:Float, ox:Float = 0, oy:Float = 0) {
+	public function shear(x:FastFloat, y:FastFloat, ox:FastFloat = 0, oy:FastFloat = 0) {
 		if(x == 0 && y == 0) return;
 
 		if(ox != 0 || oy != 0) {
@@ -572,19 +652,19 @@ class Graphics {
 		onTransformUpdate();
 	}
 
-	public function inverseTransformPointX(x:Float, y:Float):Float {
+	public function inverseTransformPointX(x:FastFloat, y:FastFloat):FastFloat {
 		return _transform.getTransformX(x, y);
 	}
 
-	public function inverseTransformPointY(x:Float, y:Float) {
+	public function inverseTransformPointY(x:FastFloat, y:FastFloat):FastFloat {
 		return _transform.getTransformY(x, y);
 	}
 
-	public function transformPointX(x:Float, y:Float) {
+	public function transformPointX(x:FastFloat, y:FastFloat):FastFloat {
 		updateInvertedTransform();
 		return _invertseTransform.getTransformX(x, y);
 	}
-	public function transformPointY(x:Float, y:Float) {
+	public function transformPointY(x:FastFloat, y:FastFloat):FastFloat {
 		updateInvertedTransform();
 		return _invertseTransform.getTransformY(x, y);
 	}
@@ -620,7 +700,7 @@ class Graphics {
 
 	// draw
 	// public function draw(drawable) {}
-	public function drawImage(texture:Texture, x:Float = 0, y:Float = 0, ?w:Float, ?h:Float, rx:Float = 0, ry:Float = 0, ?rw:Float, ?rh:Float) {
+	public function drawImage(texture:Texture, x:FastFloat = 0, y:FastFloat = 0, ?w:FastFloat, ?h:FastFloat, rx:FastFloat = 0, ry:FastFloat = 0, ?rw:FastFloat, ?rh:FastFloat) {
 		if(texture == null) texture = Graphics.textureDefault;
 
 		final texWidth = texture.widthActual;
@@ -637,10 +717,7 @@ class Graphics {
 		final right = (rx + rw) / texWidth;
 		final bottom = (ry + rh) / texHeight;
 
-		if(!canBatch(4, 6)) flush();
-		setTexture(texture);
-
-		beginGeometryInternal(4, 6);
+		beginGeometry(texture, 4, 6);
 
 		addVertex(x, y, Color.WHITE, left, top);
 		addVertex(x+w, y, Color.WHITE, right, top);
@@ -653,7 +730,7 @@ class Graphics {
 		endGeometry();
 	}
 
-	public function drawString(text:String, x:Float, y:Float, spacing:Int = 0) {
+	public function drawString(text:String, x:FastFloat, y:FastFloat, spacing:Int = 0) {
 		if(text.length == 0) return;
 
 		final texture = _font.getTexture(fontSize);
@@ -663,7 +740,7 @@ class Graphics {
 		final texRatioX:FastFloat = image.width / image.realWidth;
 		final texRatioY:FastFloat = image.height / image.realHeight;
 
-		var linePos:Float = 0;
+		var linePos:FastFloat = 0;
 		var charIndex:Int = 0;
 		var charQuad:AlignedQuad;
 
@@ -676,9 +753,6 @@ class Graphics {
 		var top:FastFloat;
 		var right:FastFloat;
 		var bottom:FastFloat;
-
-		if(!canBatch(4, 6)) flush();
-		setTexture(texture);
 
 		var i:Int = 0;
 		while(i < text.length) {
@@ -697,9 +771,7 @@ class Graphics {
 					right = charQuad.s1 * texRatioX;
 					bottom = charQuad.t1 * texRatioY;
 
-					if(!canBatch(4, 6)) flush();
-
-					beginGeometryInternal(4, 6);
+					beginGeometry(texture, 4, 6);
 
 					addVertex(x+x0, y+y0, Color.WHITE, left, top);
 					addVertex(x+x1, y+y0, Color.WHITE, right, top);
@@ -740,49 +812,328 @@ class Graphics {
 	}
 
 	// shapes
-	public function drawLine(x0:Float, y0:Float, x1:Float, y1:Float) {}
-	public function drawPolyLine(points:Array<Float>) {}
-	public function drawCubicBezier(points:Array<Float>, closed:Bool = false, segments:Int = 20) {}
+	public function drawLine(x0:FastFloat, y0:FastFloat, x1:FastFloat, y1:FastFloat) {
+		drawPolyLineInternal([x0, y0, x1, y1], false);
+	}
 
-	public function drawTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float) {}
-	public function drawRectangle(x:Float, y:Float, w:Float, h:Float) {}
-	public function drawCircle(x:Float, y:Float, r:Float) {}
-	public function drawEllipse(x:Float, y:Float, rx:Float, ry:Float) {}
-	public function drawArc(x:Float, y:Float, radius:Float, angleStart:Float, angle:Float, segments:Int = -1) {}
+	public function drawTriangle(x0:FastFloat, y0:FastFloat, x1:FastFloat, y1:FastFloat, x2:FastFloat, y2:FastFloat) {
+		drawPolyLineInternal([x0, y0, x1, y1, x2, y2], true);
+	}
 
-	public function fillTriangle(x0:Float, y0:Float, x1:Float, y1:Float, x2:Float, y2:Float) {}
-	public function fillRectangle(x:Float, y:Float, w:Float, h:Float) {}
-	public function fillCircle(x:Float, y:Float, r:Float) {}
-	public function fillEllipse(x:Float, y:Float, rx:Float, ry:Float) {}
-	public function fillArc(x:Float, y:Float, radius:Float, angleStart:Float, angle:Float, segments:Int = -1) {}
-	public function fillPolygon(points:Array<Float>, indices:Array<Int>) {}
+	public function drawRectangle(x:FastFloat, y:FastFloat, w:FastFloat, h:FastFloat) {
+		if(w == 0 || h == 0) return;
+		drawPolyLineInternal([x, y, x+w, y, x+w, y+h, x, y+h], true);
+	}
+
+	public function drawCircle(x:FastFloat, y:FastFloat, r:FastFloat, segments:Int = -1) {
+		drawEllipse(x, y, r, r, segments);
+	}
+
+	public function drawEllipse(x:FastFloat, y:FastFloat, rx:FastFloat, ry:FastFloat, segments:Int = -1) {
+		if(ry == 0 || rx == 0) return;
+		if(segments <= 0) {
+			var scale = Math.sqrt((_transform.a * _transform.a + _transform.b * _transform.b) * Math.max(rx, ry));
+			segments = Std.int(scale * segmentSmooth);
+		}
+
+		if(segments < 3) segments = 3;
+		
+		var theta:FastFloat = Math.TAU / segments;
+		
+		var c:FastFloat = Math.cos(theta);
+		var s:FastFloat = Math.sin(theta);
+
+		var px:FastFloat = 1;
+		var py:FastFloat = 0;
+		var t:FastFloat = 0;
+
+		var points = [];
+
+		var i:Int = 0;
+		while(i < segments) {
+			points.push(x + px * rx);
+			points.push(y + py * ry);
+
+			t = px;
+			px = c * px - s * py;
+			py = s * t + c * py;
+
+			i++;
+		}
+
+		drawPolyLine(points, true);
+	}
+
+	public function drawArc(x:FastFloat, y:FastFloat, radius:FastFloat, angleStart:FastFloat, angle:FastFloat, segments:Int = -1) {
+		if(radius == 0 || angle == 0) return;
+		
+		var absAngle:FastFloat = Math.abs(angle);
+
+		if(segments <= 0) {
+			if(absAngle > Math.TAU) absAngle = Math.TAU;
+			var angleScale = absAngle / Math.TAU;
+			var scale = Math.sqrt((_transform.a * _transform.a + _transform.b * _transform.b) * radius * angleScale);
+			segments = Std.int(scale * segmentSmooth);
+		}
+
+		if(segments < 3) segments = 3;
+
+		var theta:FastFloat = absAngle / segments;
+		
+		var c:FastFloat = Math.cos(theta);
+		var s:FastFloat = Math.sin(theta);
+
+		var px:FastFloat = Math.cos(angleStart);
+		var py:FastFloat = Math.sin(angleStart);
+		var t:FastFloat = 0;
+
+		var segsAdd = 0;
+
+		if(absAngle < Math.TAU) segsAdd = 1;
+		
+		var points = [];
+
+		var i:Int = 0;
+		while(i < segments) {
+			points.push(x + px * radius);
+			points.push(y + py * radius);
+			t = px;
+			if(angle > 0) {
+				px = px * c - py * s;
+				py = t * s + py * c;
+			} else {
+				px = px * c + py * s;
+				py = -t * s + py * c;
+			}
+			i++;
+		}
+
+		if(absAngle < Math.TAU) {
+			points.push(x + px * radius);
+			points.push(y + py * radius);
+		}
+
+		points.push(x);
+		points.push(y);
+
+		drawPolyLineInternal(points, true);
+	}
+
+	public function drawPolyLine(points:Array<FastFloat>, closed:Bool = false) {
+		drawPolyLineInternal(points, closed);
+	}
+
+	// https://github.com/Feirell/2d-bezier/blob/master/lib/cubic-bezier.js
+	public function drawCubicBezier(points:Array<FastFloat>, closed:Bool = false, segments:Int = 20) {
+		var drawPoints:Array<FastFloat> = [];
+
+		var ax:FastFloat;
+		var ay:FastFloat;
+
+		var bx:FastFloat;
+		var by:FastFloat;
+
+		var cx:FastFloat;
+		var cy:FastFloat;
+
+		var dx:FastFloat;
+		var dy:FastFloat;
+
+		var t:FastFloat;
+		var omt:FastFloat;
+
+		var x:FastFloat;
+		var y:FastFloat;
+
+		var i = 0;
+		var j = 0;
+		while(i < points.length) {
+			ax = points[i++]; ay = points[i++];
+			bx = points[i++]; by = points[i++];
+			cx = points[i++]; cy = points[i++];
+			dx = points[i++]; dy = points[i++];
+
+			j = 0;
+			while(j <= segments) {
+				t = j / segments;
+				omt = 1 - t;
+
+				x = omt * omt * omt * ax +
+					3 * t * omt * omt * bx +
+					3 * t * t * omt * cx +
+					t * t * t * dx;
+
+				y = omt * omt * omt * ay +
+					3 * t * omt * omt * by +
+					3 * t * t * omt * cy +
+					t * t * t * dy;
+
+				drawPoints.push(x);
+				drawPoints.push(y);
+				j++;
+			}
+		}
+		drawPolyLineInternal(drawPoints, closed);
+	}
+
+	public function fillTriangle(x0:FastFloat, y0:FastFloat, x1:FastFloat, y1:FastFloat, x2:FastFloat, y2:FastFloat) {
+		beginGeometry(null, 3, 3);
+
+		addVertex(x0, y0);
+		addVertex(x1, y1);
+		addVertex(x2, y2);
+		addIndex(0);
+		addIndex(1);
+		addIndex(2);
+
+		endGeometry();
+	}
+	public function fillRectangle(x:FastFloat, y:FastFloat, w:FastFloat, h:FastFloat) {
+		if(w == 0 || h == 0) return;
+
+		beginGeometry(null, 4, 6);
+
+		addVertex(x, y);
+		addVertex(x+w, y);
+		addVertex(x+w, y+h);
+		addVertex(x, y+h);
+		addIndex(0);
+		addIndex(1);
+		addIndex(2);
+		addIndex(0);
+		addIndex(2);
+		addIndex(3);
+
+		endGeometry();
+	}
+
+	public function fillCircle(x:FastFloat, y:FastFloat, r:FastFloat, segments:Int = -1) {
+		fillEllipse(x, y, r, r, segments);
+	}
+
+	public function fillEllipse(x:FastFloat, y:FastFloat, rx:FastFloat, ry:FastFloat, segments:Int = -1) {
+		if(rx == 0 || ry == 0) return;
+
+		if(segments <= 0) {
+			var scale = Math.sqrt((_transform.a * _transform.a + _transform.b * _transform.b) * Math.max(rx, ry));
+			segments = Std.int(scale * segmentSmooth);
+		}
+
+		if(segments < 3) segments = 3;
+		
+		var theta:FastFloat = Math.TAU / segments;
+		
+		var c:FastFloat = Math.cos(theta);
+		var s:FastFloat = Math.sin(theta);
+
+		var px:FastFloat = 1;
+		var py:FastFloat = 0;
+		var t:FastFloat = 0;
+
+		beginGeometry(null, segments+1, segments*3);
+
+		var i:Int = 0;
+		while(i < segments) {
+			addVertex(x + px * rx, y + py * ry);
+
+			t = px;
+			px = c * px - s * py;
+			py = s * t + c * py;
+
+			addIndex(i);
+			addIndex((i+1) % segments);
+			addIndex(segments);
+			i++;
+		}
+		addVertex(x, y);
+
+		endGeometry();
+	}
+
+	public function fillArc(x:FastFloat, y:FastFloat, radius:FastFloat, angleStart:FastFloat, angle:FastFloat, segments:Int = -1) {
+		if(radius == 0 || angle == 0) return;
+		
+		var absAngle:FastFloat = Math.abs(angle);
+
+		if(segments <= 0) {
+			if(absAngle > Math.TAU) absAngle = Math.TAU;
+			var angleScale = absAngle / Math.TAU;
+			var scale = Math.sqrt((_transform.a * _transform.a + _transform.b * _transform.b) * radius * angleScale);
+			segments = Std.int(scale * segmentSmooth);
+		}
+
+		if(segments < 3) segments = 3;
+
+		var theta:FastFloat = absAngle / segments;
+		
+		var c:FastFloat = Math.cos(theta);
+		var s:FastFloat = Math.sin(theta);
+
+		var px:FastFloat = Math.cos(angleStart);
+		var py:FastFloat = Math.sin(angleStart);
+		var t:FastFloat = 0;
+
+		var segsAdd = 0;
+
+		if(absAngle < Math.TAU) segsAdd = 1;
+		
+		beginGeometry(null, segments+segsAdd+1, segments*3+3);
+
+		var i:Int = 0;
+		while(i < segments) {
+			addVertex(x + px * radius, y + py * radius);
+			t = px;
+			if(angle > 0) {
+				px = px * c - py * s;
+				py = t * s + py * c;
+			} else {
+				px = px * c + py * s;
+				py = -t * s + py * c;
+			}
+
+			addIndex(i);
+			addIndex((i+1) % (segments + segsAdd));
+			addIndex(segments + segsAdd);
+
+			i++;
+		}
+
+		if(absAngle < Math.TAU) addVertex(x + px * radius, y + py * radius);
+		
+		addVertex(x, y);
+
+		addIndex(0);
+		addIndex(segments);
+		addIndex(segments + segsAdd);
+
+		endGeometry();
+	}
+
+	public function fillPolygon(points:Array<FastFloat>, indices:Array<Int>) {
+		beginGeometry(null, points.length, indices.length);
+		var i:Int = 0;
+		while(i < points.length) addVertex(points[i++], points[i++]);
+		i = 0;
+		while(i < indices.length) addIndex(indices[i++]);
+		endGeometry();
+	}
 
 	// geometry
-	public inline function beginGeometry(texture:Texture, verticesCount:Int, indicesCount:Int) {
-		if(texture == null) texture = Graphics.textureDefault;
-		if(!canBatch(verticesCount, indicesCount)) flush();
-		setTexture(texture);
-		beginGeometryInternal(verticesCount, indicesCount);
-	}
-
-	function canBatch(verticesCount:Int, indicesCount:Int):Bool {
-		if(verticesCount >= _verticesMax || indicesCount >= _indicesMax) {
-			throw('Graphics: can`t batch geometry with vertices(${verticesCount}/$_verticesMax), indices($indicesCount/$_indicesMax)');
-		}
-		return _vertPos + verticesCount < _verticesMax && _indPos + indicesCount < _indicesMax;
-	}
-
-	function beginGeometryInternal(verticesCount:Int, indicesCount:Int) {
+	public function beginGeometry(texture:Texture, verticesCount:Int, indicesCount:Int) {
 		Log.assert(isDrawing, 'Graphics: begin must be called before beginGeometry');
 		Log.assert(!_inGeometryMode, 'Graphics: endGeometry must be called before beginGeometry');
 		_inGeometryMode = true;
 
-		// if(verticesCount >= _verticesMax || indicesCount >= _indicesMax) {
-		// 	throw('Graphics: can`t batch geometry with vertices(${verticesCount}/$_verticesMax), indices($indicesCount/$_indicesMax)');
-		// } else if(_vertPos + verticesCount >= _verticesMax || _indPos + indicesCount >= _indicesMax) {
-		// 	flush();
-		// }
+		if(texture == null) texture = Graphics.textureDefault;
 
+		if(verticesCount >= _verticesMax || indicesCount >= _indicesMax) {
+			throw('Graphics: can`t batch geometry with vertices(${verticesCount}/$_verticesMax), indices($indicesCount/$_indicesMax)');
+		} else if(_vertPos + verticesCount >= _verticesMax || _indPos + indicesCount >= _indicesMax) {
+			flush();
+		}
+
+		if(_lastTexture != texture) setTexture(texture);
+		
 		_vertStartPos = _vertsDraw;
 		_vertPos = _vertsDraw;
 		_indPos = _indicesDraw;
@@ -795,7 +1146,7 @@ class Graphics {
 		stats.indices += indicesCount;
 	}
 
-	public function addVertex(x:Float, y:Float, c:Color = Color.WHITE, u:Float = 0, v:Float = 0) {
+	public function addVertex(x:FastFloat, y:FastFloat, c:Color = Color.WHITE, u:FastFloat = 0, v:FastFloat = 0) {
 		_vertexIdx = _vertPos * Graphics.vertexSizeMultiTextured;
 
 		_vertices[_vertexIdx + 0] = _transform.getTransformX(x, y);
@@ -857,11 +1208,16 @@ class Graphics {
 		_textureFormat = texture.format;
 
 		if(_textureIdx < 0) {
-			if(_texturesCount >= Graphics.maxShaderTextures) flush();
+			if(_texturesCount >= Graphics.maxShaderTextures) {
+				flush();
+				stats.textureSwitchCount++;
+			}
 
 			_textureIdx = _texturesCount;
 			_textures[_textureIdx] = texture;
 			// _textureIdSet[texture.id] = _textureIdx;
+
+			_lastTexture = texture;
 
 			_texturesCount++;
 			// stats.textures++;
@@ -885,7 +1241,338 @@ class Graphics {
 			_textures[i] = null;
 			i++;
 		}
+		_lastTexture = null;
 		_texturesCount = 0;
+	}
+
+
+	// based on https://github.com/CrushedPixel/Polyline2D
+	function drawPolyLineInternal(points:Array<FastFloat>, closed:Bool = false) {
+		var thickness = lineWidth / 2;
+
+		var tScale = Math.sqrt((_transform.a * _transform.a + _transform.b * _transform.b) * thickness);
+		var s = Std.int(tScale * segmentSmooth);
+		var roundMinAngle:FastFloat = Math.TAU / s;
+
+		var segments:Array<PolySegment> = [];
+
+		var p0x:FastFloat;
+		var p0y:FastFloat;
+		var p1x:FastFloat;
+		var p1y:FastFloat;
+		var seg:PolySegment;
+
+		var i:Int = 0;
+		while (i < points.length - 3) {
+			p0x = points[i];
+			p0y = points[i + 1];
+			p1x = points[i + 2];
+			p1y = points[i + 3];
+
+			if(p0x != p1x || p0y != p1y) {
+				seg = _polySegmentPool.get();
+				seg.set(p0x, p0y, p1x, p1y, thickness);
+				segments.push(seg);
+			}
+			i += 2;
+		}
+
+		if (closed) {
+			p0x = points[points.length - 2];
+			p0y = points[points.length - 1];
+			p1x = points[0];
+			p1y = points[1];
+
+			if(p0x != p1x || p0y != p1y) {
+				seg = _polySegmentPool.get();
+				seg.set(p0x, p0y, p1x, p1y, thickness);
+				segments.push(seg);
+			}
+		}
+
+		if (segments.length == 0) return;
+		
+		var firstSegment = segments[0];
+		var lastSegment = segments[segments.length - 1];
+
+		var pathStart1 = firstSegment.edge1.a;
+		var pathStart2 = firstSegment.edge2.a;
+		var pathEnd1 = lastSegment.edge1.b;
+		var pathEnd2 = lastSegment.edge2.b;
+
+		if (closed) {
+			drawJoint(lastSegment, firstSegment, lineJoint, pathEnd1, pathEnd2, pathStart1, pathStart2, roundMinAngle);
+		} else if (lineCap == LineCap.SQUARE) {
+			pathStart1.subtract(FastVector2.MultiplyScalar(firstSegment.edge1.direction(), thickness));
+			pathStart2.subtract(FastVector2.MultiplyScalar(firstSegment.edge2.direction(), thickness));
+			pathEnd1.add(FastVector2.MultiplyScalar(lastSegment.edge1.direction(), thickness));
+			pathEnd2.add(FastVector2.MultiplyScalar(lastSegment.edge2.direction(), thickness));
+		} else if (lineCap == LineCap.ROUND) {
+			drawTriangleFan(firstSegment.center.a, firstSegment.center.a, firstSegment.edge1.a, firstSegment.edge2.a, false, roundMinAngle);
+			drawTriangleFan(lastSegment.center.b, lastSegment.center.b, lastSegment.edge1.b, lastSegment.edge2.b, true, roundMinAngle);
+		}
+
+		var start1 = pathStart1.clone();
+		var start2 = pathStart2.clone();
+		var nextStart1 = new FastVector2(0, 0);
+		var nextStart2 = new FastVector2(0, 0);
+		var end1 = new FastVector2(0, 0);
+		var end2 = new FastVector2(0, 0);
+
+		i = 0;
+		while(i < segments.length) {
+			var segment = segments[i];
+
+			if (i + 1 == segments.length) {
+				end1.copyFrom(pathEnd1);
+				end2.copyFrom(pathEnd2);
+			} else {
+				drawJoint(segment, segments[i + 1], lineJoint, end1, end2, nextStart1, nextStart2, roundMinAngle);
+			}
+
+			beginGeometry(null, 4, 6);
+
+			addVertex(start1.x, start1.y, color);
+			addVertex(end1.x, end1.y, color);
+			addVertex(end2.x, end2.y, color);
+			addVertex(start2.x, start2.y, color);
+
+			addIndex(0);
+			addIndex(1);
+			addIndex(2);
+
+			addIndex(0);
+			addIndex(2);
+			addIndex(3);
+
+			endGeometry();
+
+			start1.copyFrom(nextStart1);
+			start2.copyFrom(nextStart2);
+
+			_polySegmentPool.put(segment);
+			i++;
+		}
+	}
+
+	inline function drawJoint(segment1:PolySegment, segment2:PolySegment, jointStyle:LineJoint, end1:FastVector2, end2:FastVector2, nextStart1:FastVector2, nextStart2:FastVector2, roundMinAngle:FastFloat) {
+		var dir1 = segment1.center.direction();
+		var dir2 = segment2.center.direction();
+
+		var dot = dir1.dot(dir2);
+		var clockwise = dir1.cross(dir2) < 0;
+
+		if (jointStyle == LineJoint.MITER && dot < -1 + _miterMinAngleRadians) jointStyle = LineJoint.BEVEL;
+
+		var inner1:LineSegment = null; 
+		var inner2:LineSegment = null; 
+		var outer1:LineSegment = null; 
+		var outer2:LineSegment = null;
+
+		if (clockwise) {
+			outer1 = segment1.edge1;
+			outer2 = segment2.edge1;
+			inner1 = segment1.edge2;
+			inner2 = segment2.edge2;
+		} else {
+			outer1 = segment1.edge2;
+			outer2 = segment2.edge2;
+			inner1 = segment1.edge1;
+			inner2 = segment2.edge1;
+		}
+
+		var iVec = segment1.center.b.clone();
+		var innerSecOpt = LineSegment.intersection(inner1, inner2, false, iVec);
+		var innerSec:FastVector2 = inner1.b;
+		var innerStart:FastVector2 = inner2.a;
+
+		if(innerSecOpt) {
+			innerSec = iVec;
+			innerStart = innerSec;
+		}
+
+		if (clockwise) {
+			end1.copyFrom(outer1.b);
+			end2.copyFrom(innerSec);
+
+			nextStart1.copyFrom(outer2.a);
+			nextStart2.copyFrom(innerStart);
+		} else {
+			end1.copyFrom(innerSec);
+			end2.copyFrom(outer1.b);
+
+			nextStart1.copyFrom(innerStart);
+			nextStart2.copyFrom(outer2.a);
+		}
+
+		if(jointStyle == LineJoint.MITER){
+			var oVec = new FastVector2(0, 0);
+			if(LineSegment.intersection(outer1, outer2, true, oVec)) {
+				beginGeometry(null, 4, 6);
+
+				addVertex(outer1.b.x, outer1.b.y, color);
+				addVertex(oVec.x, oVec.y, color);
+				addVertex(outer2.a.x, outer2.a.y, color);
+				addVertex(iVec.x, iVec.y, color);
+
+				addIndex(0);
+				addIndex(1);
+				addIndex(2);
+
+				addIndex(0);
+				addIndex(2);
+				addIndex(3);
+
+				endGeometry();
+			}
+		} else if(jointStyle == LineJoint.BEVEL) {
+			beginGeometry(null, 3, 3);
+
+			addVertex(outer1.b.x, outer1.b.y, color);
+			addVertex(outer2.a.x, outer2.a.y, color);
+			addVertex(iVec.x, iVec.y, color);
+
+			addIndex(0);
+			addIndex(1);
+			addIndex(2);
+
+			endGeometry();
+		} else if(jointStyle == LineJoint.ROUND) {
+			drawTriangleFan(iVec, segment1.center.b, outer1.b, outer2.a, clockwise, roundMinAngle);
+		}
+	}
+
+	inline function drawTriangleFan(connectTo:FastVector2, origin:FastVector2, start:FastVector2, end:FastVector2, clockwise:Bool, roundMinAngle:FastFloat) {
+		var p1x:FastFloat = start.x - origin.x;
+		var p1y:FastFloat = start.y - origin.y;
+
+		var p2x:FastFloat = end.x - origin.x;
+		var p2y:FastFloat = end.y - origin.y;
+
+		var angle1 = Math.atan2(p1y, p1x);
+		var angle2 = Math.atan2(p2y, p2x);
+
+		if (clockwise) {
+			if (angle2 > angle1) angle2 = angle2 - Math.TAU;
+		} else {
+			if (angle1 > angle2) angle1 = angle1 - Math.TAU;
+		}
+
+		var jointAngle = angle2 - angle1;
+
+		var numTriangles = Std.int(Math.max(1, Math.abs(jointAngle) / roundMinAngle));
+		var theta:FastFloat = jointAngle / numTriangles;
+		
+		var c:FastFloat = Math.cos(theta);
+		var s:FastFloat = Math.sin(theta);
+
+		var px:FastFloat = c * p1x - s * p1y;
+		var py:FastFloat = s * p1x + c * p1y;
+		var t:FastFloat = 0;
+		var i:Int = 0;
+
+		var startPoint:FastVector2 = start.clone();
+		var endPoint:FastVector2 = new FastVector2(0,0);
+
+		var lastIdx = numTriangles * 2;
+		beginGeometry(null, numTriangles * 2 + 1, numTriangles * 3);
+		while(i < numTriangles) {
+			if (i + 1 == numTriangles) {
+				endPoint.copyFrom(end);
+			} else {
+				endPoint.set(origin.x + px, origin.y + py);
+				t = px;
+				px = c * px - s * py;
+				py = s * t + c * py;
+			}
+
+			addVertex(startPoint.x, startPoint.y, color);
+			addVertex(endPoint.x, endPoint.y, color);
+
+			addIndex(i * 2);
+			addIndex(i * 2 + 1);
+			addIndex(lastIdx);
+
+			startPoint.copyFrom(endPoint);
+			i++;
+		}
+		addVertex(connectTo.x, connectTo.y, color);
+		endGeometry();
+	}
+	
+}
+
+private class LineSegment {
+
+	public var a:FastVector2;
+	public var b:FastVector2;
+
+	public inline function new(a:FastVector2, b:FastVector2) {
+		this.a = a;
+		this.b = b;
+	}
+
+	public inline function direction(normalized:Bool = true):FastVector2 {
+		var vec = new FastVector2(b.x - a.x, b.y - a.y);
+		if(normalized) vec.normalize();
+		return vec;
+	}
+
+	public static function intersection(segA:LineSegment, segB:LineSegment, infiniteLines:Bool, into:FastVector2):Bool {
+		var r = segA.direction(false);
+		var s = segB.direction(false);
+
+		var originDist = FastVector2.Subtract(segB.a, segA.a);
+
+		var uNumerator:FastFloat = originDist.cross(r);
+		var denominator:FastFloat = r.cross(s);
+
+		// if (Math.abs(denominator) < 0.0001) {
+		if (Math.abs(denominator) <= 0) return false;
+
+		var u:FastFloat = uNumerator / denominator;
+		var t:FastFloat = originDist.cross(s) / denominator;
+
+		if (!infiniteLines && (t < 0 || t > 1 || u < 0 || u > 1)) return false;
+
+		into.x = segA.a.x + r.x * t;
+		into.y = segA.a.y + r.y * t;
+
+		return true;
+	}
+
+}
+
+private class PolySegment {
+
+	public var center:LineSegment;
+	public var edge1:LineSegment;
+	public var edge2:LineSegment;
+
+	public function new() {
+		center = new LineSegment(new FastVector2(0,0), new FastVector2(0,0));
+		edge1 = new LineSegment(new FastVector2(0,0), new FastVector2(0,0));
+		edge2 = new LineSegment(new FastVector2(0,0), new FastVector2(0,0));
+	}
+
+	public function set(p0x:FastFloat, p0y:FastFloat, p1x:FastFloat, p1y:FastFloat, thickness:FastFloat) {
+		center.a.set(p0x, p0y);
+		center.b.set(p1x, p1y);
+
+		var dx:FastFloat = p1x - p0x;
+		var dy:FastFloat = p1y - p0y;
+
+		var len:FastFloat = Math.sqrt(dx * dx + dy * dy);
+		var tmp:FastFloat = dx;
+
+		dx = -(dy / len) * thickness;
+		dy = (tmp / len) * thickness;
+
+		edge1.a.set(p0x + dx, p0y + dy);
+		edge1.b.set(p1x + dx, p1y + dy);
+
+		edge2.a.set(p0x - dx, p0y - dy);
+		edge2.b.set(p1x - dx, p1y - dy);
 	}
 
 }
@@ -909,15 +1596,14 @@ class GraphicsState {
 	public var textureFilter(default, null):TextureFilter;
 	public var textureMipFilter(default, null):MipMapFilter;
 	public var textureAddressing(default, null):TextureAddressing;
-
-	// public var font(default, null):FontResource;
-	// public var fontSize(default, null):Int;
+	public var segmentSmooth(default, null):Float;
+	public var miterMinAngle(default, null):Float;
+	public var font(default, null):FontResource;
+	public var fontSize(default, null):Int;
 
 	public var useScissor(default, null):Bool = false;
 
 	public function new() {
-		viewport = new Rectangle();
-		projection = new FastMatrix3();
 		transform = new FastMatrix3();
 		scissor = new Rectangle();
 		color = new Color();
@@ -927,29 +1613,26 @@ class GraphicsState {
 		target = null;
 		pipeline = null;
 
-		var dst = Nuc.window.buffer;
-
-		if (Texture.renderTargetsInvertedY) {
-			projection.orto(0, dst.widthActual, 0, dst.heightActual);
-		} else {
-			projection.orto(0, dst.widthActual, dst.heightActual, 0);
-		}
-
-		viewport.set(0, 0, dst.widthActual, dst.heightActual);
-		scissor.set(0, 0, dst.widthActual, dst.heightActual);
+		scissor.set(0, 0, 0, 0);
 
 		transform.identity();
 
 		color = Color.BLACK;
 		opacity = 1;
 
+		textureFilter = TextureFilter.PointFilter;
+		textureMipFilter = MipMapFilter.NoMipFilter;
+		textureAddressing = TextureAddressing.Clamp;
+
 		lineWidth = 4;
 		lineJoint = LineJoint.BEVEL;
 		lineCap = LineCap.BUTT;
 
-		textureFilter = TextureFilter.PointFilter;
-		textureMipFilter = MipMapFilter.NoMipFilter;
-		textureAddressing = TextureAddressing.Clamp;
+		segmentSmooth = 5;
+		miterMinAngle = 10;
+
+		font = 16;
+		fontSize = 16;
 
 		useScissor = false;
 	}
@@ -967,13 +1650,16 @@ class GraphicsState {
 		color = other.color;
 		opacity = other.opacity;
 
+		textureFilter = other.textureFilter;
+		textureMipFilter = other.textureMipFilter;
+		textureAddressing = other.textureAddressing;
+
 		lineWidth = other.lineWidth;
 		lineJoint = other.lineJoint;
 		lineCap = other.lineCap;
 
-		textureFilter = other.textureFilter;
-		textureMipFilter = other.textureMipFilter;
-		textureAddressing = other.textureAddressing;
+		segmentSmooth = other.segmentSmooth;
+		miterMinAngle = other.miterMinAngle;
 
 		useScissor = other.useScissor;
 	}
@@ -1022,45 +1708,3 @@ typedef GraphicsOptions = {
 	?batchVertices:Int,
 	?batchIndices:Int
 };
-
-// class TestAPI {
-
-// 	public function new() {
-// 		var g = nuc.Nuc.graphics;
-
-// 		g.beginCache(0);
-// 		g.drawRectangle(123, 74, 160, 80);
-// 		g.endCache();
-
-// 		g.begin();
-
-// 		g.beginBatch();
-
-// 		g.color = -1;
-// 		g.drawImage('img', 128, 256, 64, 64);
-
-// 		g.beginGeometry('img1', 4, 6);
-		
-// 		g.addVertex(0, 0);
-// 		g.addVertex(0, 64);
-// 		g.addVertex(64, 64);
-// 		g.addVertex(64, 0);
-
-// 		g.addIndex(0);
-// 		g.addIndex(1);
-// 		g.addIndex(2);
-// 		g.addIndex(0);
-// 		g.addIndex(2);
-// 		g.addIndex(3);
-
-// 		g.endGeometry();
-
-// 		g.endBatch();
-
-// 		g.drawCache(0);
-
-// 		g.end();
-
-// 	}
-
-// }
