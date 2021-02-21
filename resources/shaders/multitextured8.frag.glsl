@@ -9,32 +9,36 @@ uniform sampler2D tex[8];
 
 out vec4 FragColor;
 
+vec4 effect(sampler2D tex, vec4 color, vec2 texCoord){
+	vec4 texColor = texture(tex, texCoord);
+
+	if(outTexFormat == 1) texColor = texColor.rrrr;
+
+	texColor.rgb *= color.a;
+	texColor *= color;
+
+	return texColor;
+}
+
 void main(){
 	vec4 texColor;
 
 	if(outTexId < 0.5) {
-		texColor = texture(tex[0], outTexCoord);
+		texColor = effect(tex[0], outColor, outTexCoord);
 	} else if(outTexId < 1.5) {
-		texColor = texture(tex[1], outTexCoord);
+		texColor = effect(tex[1], outColor, outTexCoord);
 	} else if(outTexId < 2.5) {
-		texColor = texture(tex[2], outTexCoord);
+		texColor = effect(tex[2], outColor, outTexCoord);
 	} else if(outTexId < 3.5) {
-		texColor = texture(tex[3], outTexCoord);
+		texColor = effect(tex[3], outColor, outTexCoord);
 	} else if(outTexId < 4.5) {
-		texColor = texture(tex[4], outTexCoord);
+		texColor = effect(tex[4], outColor, outTexCoord);
 	} else if(outTexId < 5.5) {
-		texColor = texture(tex[5], outTexCoord);
+		texColor = effect(tex[5], outColor, outTexCoord);
 	} else if(outTexId < 6.5) {
-		texColor = texture(tex[6], outTexCoord);
+		texColor = effect(tex[6], outColor, outTexCoord);
 	} else {
-		texColor = texture(tex[7], outTexCoord);
-	}
-
-	if(outTexFormat < 0.5) { //RGBA32
-		texColor *= outColor;
-		texColor.rgb *= outColor.a;
-	} else if(outTexFormat < 1.5) { //L8
-		texColor = texColor.rrrr * outColor;
+		texColor = effect(tex[7], outColor, outTexCoord);
 	}
 
 	FragColor = texColor;
