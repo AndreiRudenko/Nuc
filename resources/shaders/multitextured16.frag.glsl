@@ -46,12 +46,10 @@ void main(){
 		texColor = texture(tex[15], outTexCoord);
 	}
 
-	if(outTexFormat < 0.5) { //RGBA32
-		texColor *= outColor;
-		texColor.rgb *= outColor.a;
-	} else if(outTexFormat < 1.5) { //L8
-		texColor = texColor.rrrr * outColor;
-	}
+	if(outTexFormat == 1) texColor = texColor.rrrr;
+
+	texColor.rgb *= outColor.a;
+	texColor *= outColor;
 
 	FragColor = texColor;
 }
