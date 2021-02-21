@@ -2,6 +2,7 @@ package nuc;
 
 import kha.Framebuffer;
 import kha.Kravur;
+import kha.simd.Float32x4;
 // import kha.arrays.Int16Array;
 
 import nuc.Nuc;
@@ -49,7 +50,7 @@ class Graphics {
 	static public var textureDefault:Texture;
 
 	// TODO: hardcoded for now, get from project settings
-	static public inline var maxShaderTextures:Int = 8;
+	static public var maxShaderTextures:Int = 8;
 
 	static public inline var vertexSizeMultiTextured:Int = 10;
 	static public inline var vertexSizeTexturedF:Int = 9;
@@ -106,8 +107,14 @@ class Graphics {
 		structure.add("texCoord", VertexData.Float2);
 		structure.add("texId", VertexData.Float1);
 		structure.add("texFormat", VertexData.Float1);
-
-		pipelineMultiTextured = new Pipeline([structure], Shaders.multitextured_vert, Shaders.multitextured8_frag);
+		
+		if(kha.Image.maxBound >= 16) {
+			maxShaderTextures = 16;
+			pipelineMultiTextured = new Pipeline([structure], Shaders.multitextured_vert, Shaders.multitextured16_frag);
+		} else {
+			maxShaderTextures = 8;
+			pipelineMultiTextured = new Pipeline([structure], Shaders.multitextured_vert, Shaders.multitextured8_frag);
+		}
 		pipelineMultiTextured.setBlending(BlendFactor.BlendOne, BlendFactor.InverseSourceAlpha, BlendOperation.Add);
 		pipelineMultiTextured.compile();
 
@@ -556,7 +563,7 @@ class Graphics {
 		_font = _savedState.font;
 		fontSize = _savedState.fontSize;
 
-		if(_savedState.useScissor != null) {
+		if(_savedState.useScissor) {
 			_scissor.copyFrom(_savedState.scissor);
 		}
 
@@ -725,20 +732,16 @@ class Graphics {
 		if(rw == null) rw = texWidth;
 		if(rh == null) rh = texHeight;
 
-		final left = rx / texWidth;
-		final top = ry / texHeight;
-		final right = (rx + rw) / texWidth;
-		final bottom = (ry + rh) / texHeight;
 
 		beginGeometry(texture, 4, 6);
 
-		addVertex(x, y, Color.WHITE, left, top);
-		addVertex(x+w, y, Color.WHITE, right, top);
-		addVertex(x+w, y+h, Color.WHITE, right, bottom);
-		addVertex(x, y+h, Color.WHITE, left, bottom);
-
-		addIndex(0); addIndex(1); addIndex(2);
-		addIndex(0); addIndex(2); addIndex(3);
+		addQuadGeometry(
+			x, y, 
+			w, h, 
+			Color.WHITE, 
+			rx/texWidth, ry/texHeight,
+			rh/texWidth, rw/texHeight
+		);
 
 		endGeometry();
 	}
@@ -762,6 +765,9 @@ class Graphics {
 		var x1:FastFloat;
 		var y1:FastFloat;
 
+		// var w0:FastFloat;
+		// var h0:FastFloat;
+
 		var left:FastFloat;
 		var top:FastFloat;
 		var right:FastFloat;
@@ -778,6 +784,8 @@ class Graphics {
 					y0 = charQuad.y0;
 					x1 = charQuad.x1;
 					y1 = charQuad.y1;
+					// w0 = charQuad.x1 - x0;
+					// h0 = charQuad.y1 - y0;
 
 					left = charQuad.s0 * texRatioX;
 					top = charQuad.t0 * texRatioY;
@@ -786,13 +794,21 @@ class Graphics {
 
 					beginGeometry(texture, 4, 6);
 
-					addVertex(x+x0, y+y0, Color.WHITE, left, top);
-					addVertex(x+x1, y+y0, Color.WHITE, right, top);
-					addVertex(x+x1, y+y1, Color.WHITE, right, bottom);
-					addVertex(x+x0, y+y1, Color.WHITE, left, bottom);
+					addQuadGeometry(
+						x+x0, y+y0, 
+						x1-x0, y1-y0, 
+						Color.WHITE, 
+						left, top,
+						right-left, bottom-top
+					);
 
-					addIndex(0); addIndex(1); addIndex(2);
-					addIndex(0); addIndex(2); addIndex(3);
+					// addVertex(x+x0, y+y0, Color.WHITE, left, top);
+					// addVertex(x+x1, y+y0, Color.WHITE, right, top);
+					// addVertex(x+x1, y+y1, Color.WHITE, right, bottom);
+					// addVertex(x+x0, y+y1, Color.WHITE, left, bottom);
+
+					// addIndex(0); addIndex(1); addIndex(2);
+					// addIndex(0); addIndex(2); addIndex(3);
 
 					endGeometry();
 				}
@@ -1179,6 +1195,176 @@ class Graphics {
 		_vertices[_vertexIdx + 9] = _textureFormat;
 
 		_vertPos++;
+	}
+
+	public function addQuadGeometry(x:FastFloat, y:FastFloat, w:FastFloat, h:FastFloat, c:Color, rx:FastFloat, ry:FastFloat, rw:FastFloat, rh:FastFloat) {
+		var n = _vertPos * Graphics.vertexSizeMultiTextured;
+
+		var xw:FastFloat = x + w;
+		var yh:FastFloat = y + h;
+
+// 		p0x = a * x   + c * y   + tx
+// 		p1x = a * x+w + c * y   + tx
+// 		p2x = a * x+w + c * y+h + tx
+// 		p3x = a * x   + c * y+h + tx
+
+// 		p0y = b * x   + d * y   + ty
+// 		p1y = b * x+w + d * y   + ty
+// 		p2y = b * x+w + d * y+h + ty
+// 		p3y = b * x   + d * y+h + ty
+
+		var r:FastFloat = 1;
+		var g:FastFloat = 1;
+		var b:FastFloat = 1;
+		var a:FastFloat = 1;
+
+		#if cpp
+
+		var ma = Float32x4.loadAllFast(_transform.a);
+		var mb = Float32x4.loadAllFast(_transform.b);
+		var mc = Float32x4.loadAllFast(_transform.c);
+		var md = Float32x4.loadAllFast(_transform.d);
+
+		var mtx = Float32x4.loadAllFast(_transform.tx);
+		var mty = Float32x4.loadAllFast(_transform.ty);
+
+		var xx = Float32x4.loadFast(x, xw, xw, x);
+		var yy = Float32x4.loadFast(y, y, yh, yh);
+
+		var simdX = Float32x4.add(Float32x4.add(Float32x4.mul(ma, xx), Float32x4.mul(mc, yy)), mtx);
+		var simdY = Float32x4.add(Float32x4.add(Float32x4.mul(mb, xx), Float32x4.mul(md, yy)), mty);
+
+		var p0x = Float32x4.getFast(simdX, 0);
+		var p0y = Float32x4.getFast(simdY, 0);
+
+		var p1x = Float32x4.getFast(simdX, 1);
+		var p1y = Float32x4.getFast(simdY, 1);
+
+		var p2x = Float32x4.getFast(simdX, 2);
+		var p2y = Float32x4.getFast(simdY, 2);
+
+		var p3x = Float32x4.getFast(simdX, 3);
+		var p3y = Float32x4.getFast(simdY, 3);
+
+		_vertices[n + 0] = p0x; 
+		_vertices[n + 1] = p0y; 
+
+		_vertices[n + 10] = p1x; 
+		_vertices[n + 11] = p1y; 
+
+		_vertices[n + 20] = p2x; 
+		_vertices[n + 21] = p2y; 
+
+		_vertices[n + 30] = p3x; 
+		_vertices[n + 31] = p3y; 
+
+
+		var ca = Float32x4.loadFast(c.rB, c.gB, c.bB, c.aB);
+		var cb = Float32x4.loadFast(_color.rB, _color.gB, _color.bB, _color.aB);
+		var cf = Float32x4.loadAllFast(0xFF);
+		var cd = Float32x4.loadAllFast(65280);
+
+		var cc = Float32x4.div(Float32x4.add((Float32x4.mul(ca, cb)), cf), cd);
+
+		r = Float32x4.getFast(cc, 0);
+		g = Float32x4.getFast(cc, 1);
+		b = Float32x4.getFast(cc, 2);
+		a = Float32x4.getFast(cc, 3) * _opacity;
+
+		#else
+		var t = _transform;
+		var p0x = t.getTransformX(x, y);
+		var p0y = t.getTransformY(x, y);
+
+		var p1x = t.getTransformX(xw, y);
+		var p1y = t.getTransformY(xw, y);
+
+		var p2x = t.getTransformX(xw, yh);
+		var p2y = t.getTransformY(xw, yh);
+
+		var p3x = t.getTransformX(x, yh);
+		var p3y = t.getTransformY(x, yh);
+
+		_vertices[n + 0] = p0x; 
+		_vertices[n + 1] = p0y; 
+
+		_vertices[n + 10] = p1x; 
+		_vertices[n + 11] = p1y; 
+
+		_vertices[n + 20] = p2x; 
+		_vertices[n + 21] = p2y; 
+
+		_vertices[n + 30] = p3x; 
+		_vertices[n + 31] = p3y; 
+
+		c.multiply(_color);
+
+		r = c.r;
+		g = c.g;
+		b = c.b;
+		a = c.a * _opacity;
+
+		#end
+
+		_vertices[n + 2] = r;
+		_vertices[n + 3] = g;
+		_vertices[n + 4] = b;
+		_vertices[n + 5] = a;
+
+		_vertices[n + 12] = r;
+		_vertices[n + 13] = g;
+		_vertices[n + 14] = b;
+		_vertices[n + 15] = a;
+
+		_vertices[n + 22] = r;
+		_vertices[n + 23] = g;
+		_vertices[n + 24] = b;
+		_vertices[n + 25] = a;
+
+		_vertices[n + 32] = r;
+		_vertices[n + 33] = g;
+		_vertices[n + 34] = b;
+		_vertices[n + 35] = a;
+
+		var rxw:FastFloat = rx + rw;
+		var ryh:FastFloat = ry + rh;
+
+		_vertices[n + 6] = rx;
+		_vertices[n + 7] = ry;
+
+		_vertices[n + 16] = rxw;
+		_vertices[n + 17] = ry;
+
+		_vertices[n + 26] = rxw;
+		_vertices[n + 27] = ryh;
+
+		_vertices[n + 36] = rx;
+		_vertices[n + 37] = ryh;
+
+
+		_vertices[n + 8] = _textureIdx;
+		_vertices[n + 9] = _textureFormat;
+
+		_vertices[n + 18] = _textureIdx;
+		_vertices[n + 19] = _textureFormat;
+
+		_vertices[n + 28] = _textureIdx;
+		_vertices[n + 29] = _textureFormat;
+
+		_vertices[n + 38] = _textureIdx;
+		_vertices[n + 39] = _textureFormat;
+
+		_vertPos+=4;
+
+		var i = _indPos;
+		_indices[i+0] = _vertStartPos + 0;
+		_indices[i+1] = _vertStartPos + 1;
+		_indices[i+2] = _vertStartPos + 2;
+		_indices[i+3] = _vertStartPos + 0;
+		_indices[i+4] = _vertStartPos + 2;
+		_indices[i+5] = _vertStartPos + 3;
+
+		_indPos += 6;
 	}
 
 	public function addIndex(i:Int) {
