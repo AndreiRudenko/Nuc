@@ -1,11 +1,11 @@
-package nuc.resources;
+package nuc.audio;
 
 import haxe.io.Bytes;
 import nuc.utils.Float32Array;
 import nuc.resources.Resource;
 import nuc.Resources;
 
-class AudioResource extends Resource {
+class Sound extends Resource {
 
 	public var sound:kha.Sound;
 
@@ -24,13 +24,11 @@ class AudioResource extends Resource {
 	inline function set_uncompressedData(v:Float32Array) return sound.uncompressedData = v;
 
 	public function new(?sound:kha.Sound) {
-		if(sound == null) {
-			sound = new kha.Sound();
-		}
-
+		if(sound == null) sound = new kha.Sound();
+		
 		this.sound = sound;
 
-		resourceType = ResourceType.AUDIO;
+		resourceType = ResourceType.SOUND;
 	}
 
 	public function load(?onComplete:()->Void, uncompress:Bool = true) {

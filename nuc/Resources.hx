@@ -1,13 +1,14 @@
 package nuc;
 
 import nuc.resources.Resource;
-import nuc.resources.AudioResource;
 import nuc.resources.BytesResource;
 import nuc.resources.JsonResource;
 import nuc.resources.TextResource;
 import nuc.graphics.Font;
 import nuc.graphics.Texture;
 import nuc.graphics.Video;
+import nuc.audio.Sound;
+
 import nuc.utils.Log;
 import nuc.utils.IdGenerator;
 
@@ -20,7 +21,7 @@ class Resources {
 	public var stats:ResourceStats;
 
 	var _textureExt:Array<String>;
-	var _audioExt:Array<String>;
+	var _soundExt:Array<String>;
 	var _fontExt:Array<String>;
 	var _videoExt:Array<String>;
 	// var _ids:IdGenerator;
@@ -29,7 +30,7 @@ class Resources {
 
 	function new() {
 		_textureExt = kha.Assets.imageFormats;
-		_audioExt = kha.Assets.soundFormats;
+		_soundExt = kha.Assets.soundFormats;
 		_videoExt = kha.Assets.videoFormats;
 		_fontExt = kha.Assets.fontFormats;
 
@@ -50,7 +51,7 @@ class Resources {
 		unloadAll();
 	}
 
-	public function loadAll(arr:Array<String>, onComplete:()->Void, ?onProgress:(p:Float)->Void, uncompressAudio:Bool = true) {
+	public function loadAll(arr:Array<String>, onComplete:()->Void, ?onProgress:(p:Float)->Void, uncompressSound:Bool = true) {
 		if(arr.length == 0) {
 			if(onProgress != null) onProgress(1);
 			onComplete();
@@ -73,7 +74,7 @@ class Resources {
 			if(onProgress != null) onProgress(progress);
 			
 			if(i < count) {
-				load(arr[i], cb, uncompressAudio);
+				load(arr[i], cb, uncompressSound);
 			} else {
 				onComplete();
 			}
@@ -90,7 +91,7 @@ class Resources {
 		cache = new Map();
 	}
 
-	public function load(name:String, ?onComplete:(r:Resource)->Void, uncompressAudio:Bool = true) {
+	public function load(name:String, ?onComplete:(r:Resource)->Void, uncompressSound:Bool = true) {
 		var res = cache.get(name);
 		if(res != null) {
 			Log.warning("resource already exists: " + name);
@@ -103,7 +104,7 @@ class Resources {
 		switch (ext) {
 			case e if (_textureExt.indexOf(e) != -1): loadTexture(name, onComplete);
 			case e if (_fontExt.indexOf(e) != -1): loadFont(name, onComplete);
-			case e if (_audioExt.indexOf(e) != -1): loadAudio(name, onComplete, uncompressAudio);
+			case e if (_soundExt.indexOf(e) != -1): loadSound(name, onComplete, uncompressSound);
 			case e if (_videoExt.indexOf(e) != -1): loadVideo(name, onComplete);
 			case "json": loadJson(name, onComplete);
 			case "txt": loadText(name, onComplete);
@@ -251,29 +252,29 @@ class Resources {
 		);
 	}
 
-	public function loadAudio(name:String, ?onComplete:(r:AudioResource)->Void, uncompress:Bool = true) {
-		var res:AudioResource = cast cache.get(name);
+	public function loadSound(name:String, ?onComplete:(r:Sound)->Void, uncompress:Bool = true) {
+		var res:Sound = cast cache.get(name);
 
 		if(res != null) {
-			Log.warning("audio resource already exists: " + name);
+			Log.warning("sound resource already exists: " + name);
 			if(onComplete != null) onComplete(res);
 			return;
 		}
 
-		Log.debug("audio / loading / " + name);
+		Log.debug("sound / loading / " + name);
 
 		kha.Assets.loadSoundFromPath(
 			getResourcePath(name), 
 			function(snd:kha.Sound){
 				if(uncompress) {
 					snd.uncompress(function() {
-						res = new AudioResource(snd);
+						res = new Sound(snd);
 						res.name = name;
 						add(res);
 						if(onComplete != null) onComplete(res);
 					});
 				} else {
-					res = new AudioResource(snd);
+					res = new Sound(snd);
 					res.name = name;
 					add(res);
 					if(onComplete != null) onComplete(res);
@@ -321,7 +322,7 @@ class Resources {
 	public function texture(name:String):Texture return fetch(name);
 	public function font(name:String):Font return fetch(name);
 	public function video(name:String):Video return fetch(name);
-	public function audio(name:String):AudioResource return fetch(name);
+	public function sound(name:String):Sound return fetch(name);
 
 	inline function fetch<T>(name:String):T {
 		var res:T = cast cache.get(name);
@@ -338,7 +339,7 @@ class Resources {
 			case ResourceType.TEXTURE:          stats.textures  += _offset;
 			case ResourceType.RENDERTEXTURE:    stats.rtt       += _offset;
 			case ResourceType.FONT:             stats.fonts     += _offset;
-			case ResourceType.AUDIO:            stats.audios    += _offset;
+			case ResourceType.SOUND:            stats.sounds    += _offset;
 			case ResourceType.VIDEO:            stats.videos    += _offset;
 			default:
 		}
@@ -365,7 +366,7 @@ class ResourceStats {
 	public var texts:Int = 0;
 	public var jsons:Int = 0;
 	public var bytes:Int = 0;
-	public var audios:Int = 0;
+	public var sounds:Int = 0;
 	public var videos:Int = 0;
 	public var unknown:Int = 0;
 
@@ -381,8 +382,8 @@ class ResourceStats {
 			"\ttext : " + texts + "\n" +
 			"\tjson : " + jsons + "\n" +
 			"\tbytes : " + bytes + "\n" +
-			"\taudios : " + audios + "\n" +
-			"\tvideos : " + audios + "\n" +
+			"\tsounds : " + sounds + "\n" +
+			"\tvideos : " + sounds + "\n" +
 			"\tunknown : " + unknown;
 	} 
 
@@ -394,7 +395,7 @@ class ResourceStats {
 		texts = 0;
 		jsons = 0;
 		bytes = 0;
-		audios = 0;
+		sounds = 0;
 		videos = 0;
 		unknown = 0;
 	} 
@@ -409,6 +410,6 @@ enum abstract ResourceType(Int) {
 	var TEXTURE;
 	var RENDERTEXTURE;
 	var FONT;
-	var AUDIO;
+	var SOUND;
 	var VIDEO;
 }
