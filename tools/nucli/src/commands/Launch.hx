@@ -92,6 +92,31 @@ class Launch extends Command {
 				}
 				CLI.execute('start', ['cmd', "/c", 'adb', 'shell', 'am', 'start', '-n', '$pkg/tech.kode.kore.KoreActivity']);
 			}
+			case 'android-native' : {
+				var path:String;
+
+				if(config.debug) {
+					path = Path.join([CLI.userDir, 'build/android-native-build/${config.project.title}/app/build/outputs/apk/debug/app-debug.apk']);
+				} else {
+					path = Path.join([CLI.userDir, 'build/android-native-build/${config.project.title}/app/build/outputs/apk/release/app-release.apk']);
+				}
+
+				if(!FileSystem.exists(path)) {
+					CLI.error('Can`t find app at: $path');
+				}
+				var pkg = Reflect.field(config.android, 'package');
+
+				if(pkg == null) {
+					CLI.print('Can`t find android package settings, use tech.kode.kha');
+					pkg = 'tech.kode.kha';
+				}
+				// CLI.execute('start', ['cmd', "/c", 'adb', 'uninstall', '$pkg']);
+				CLI.execute('start', ['cmd', "/c", 'adb', 'install', '-r', '$path']);
+				if(config.debug) {
+					CLI.execute('start', ['cmd', "/c", 'adb', 'logcat', '-s', 'Kinc', 'DEBUG', 'AndroidRuntime']);
+				}
+				CLI.execute('start', ['cmd', "/c", 'adb', 'shell', 'am', 'start', '-n', '$pkg/tech.kinc.KincActivity']);
+			}
 			case 'linux': {
 				var path = Path.join([CLI.userDir, 'build/linux/${config.project.title}']);
 				if(!FileSystem.exists(path)) {
