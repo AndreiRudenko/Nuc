@@ -220,8 +220,7 @@ class Graphics {
 		vertexBuffer.unlock();
 	}
 
-	// public var target(get, never):Texture;
-	// inline function get_target() return renderer.target;
+	public var target(default, null):Texture;
 
 	public var isDrawing:Bool = false;
 
@@ -448,6 +447,7 @@ class Graphics {
 	// state
 	public function begin(?target:Texture) {
 		if(target == null) target = Nuc.window.buffer;
+		this.target = target;
 		_renderer.begin(target);
 		setProjection(target.widthActual, target.heightActual);
 		clearTextures();
@@ -462,6 +462,7 @@ class Graphics {
 	public function end() {
 		flush();
 		_renderer.end();
+		this.target = null;
 		isDrawing = false;
 	}
 
@@ -501,7 +502,7 @@ class Graphics {
 	}
 
 	public function save() {
-		_savedState.target = _target;
+		_savedState.target = target;
 		_savedState.pipeline = _pipeline;
 		_savedState.transform.copyFrom(_transform);
 
@@ -516,8 +517,11 @@ class Graphics {
 		_savedState.lineJoint = _lineJoint;
 		_savedState.lineCap = _lineCap;
 
-		_savedState.segmentSmooth = _segmentSmooth;
-		_savedState.miterMinAngle = _miterMinAngle;
+		_savedState.segmentSmooth = segmentSmooth;
+		_savedState.miterMinAngle = miterMinAngle;
+
+		_savedState.font = _font;
+		_savedState.fontSize = fontSize;
 
 		if(_scissor != null) {
 			_savedState.useScissor = true;
@@ -528,11 +532,10 @@ class Graphics {
 
 		_wasSaved = true;
 
-		flush();
+		if(isDrawing) flush();
 	}
 
 	public function restore() {		
-		_target = _savedState.target;
 		_pipeline = _savedState.pipeline;
 		_transform.copyFrom(_savedState.transform);
 
@@ -547,8 +550,11 @@ class Graphics {
 		_lineJoint = _savedState.lineJoint;
 		_lineCap = _savedState.lineCap;
 
-		_segmentSmooth = _savedState.segmentSmooth;
-		_miterMinAngle = _savedState.miterMinAngle;
+		segmentSmooth = _savedState.segmentSmooth;
+		miterMinAngle = _savedState.miterMinAngle;
+
+		_font = _savedState.font;
+		fontSize = _savedState.fontSize;
 
 		if(_savedState.useScissor != null) {
 			_scissor.copyFrom(_savedState.scissor);
@@ -556,7 +562,14 @@ class Graphics {
 
 		_wasSaved = false;
 
-		flush();
+		if(isDrawing) {
+			flush();
+
+			if(_savedState.target != null) {
+				end();
+				begin(_savedState.target);
+			}
+		}
 	}
 
 	// public function reset() {}
@@ -1598,7 +1611,7 @@ class GraphicsState {
 	public var textureAddressing(default, null):TextureAddressing;
 	public var segmentSmooth(default, null):Float;
 	public var miterMinAngle(default, null):Float;
-	public var font(default, null):FontResource;
+	public var font(default, null):Font;
 	public var fontSize(default, null):Int;
 
 	public var useScissor(default, null):Bool = false;
@@ -1631,37 +1644,10 @@ class GraphicsState {
 		segmentSmooth = 5;
 		miterMinAngle = 10;
 
-		font = 16;
+		font = null;
 		fontSize = 16;
 
 		useScissor = false;
-	}
-
-	function copyFrom(other:GraphicsState) {
-		target = other.target;
-
-		pipeline = other.pipeline;
-
-		viewport.copyFrom(other.viewport);
-		projection.copyFrom(other.projection);
-		transform.copyFrom(other.transform);
-		scissor.copyFrom(other.scissor);
-
-		color = other.color;
-		opacity = other.opacity;
-
-		textureFilter = other.textureFilter;
-		textureMipFilter = other.textureMipFilter;
-		textureAddressing = other.textureAddressing;
-
-		lineWidth = other.lineWidth;
-		lineJoint = other.lineJoint;
-		lineCap = other.lineCap;
-
-		segmentSmooth = other.segmentSmooth;
-		miterMinAngle = other.miterMinAngle;
-
-		useScissor = other.useScissor;
 	}
 
 	function get_id() {
