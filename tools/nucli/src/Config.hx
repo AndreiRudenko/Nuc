@@ -22,6 +22,9 @@ class Config {
 
 		kfile += 'p.addLibrary("${CLI.engineName}");\n';
 
+		final libPath = Path.join([CLI.engineDir, 'lib']);
+		kfile += 'p.addLibrary("$libPath");\n';
+
 		if(project.libraries != null) {
 			for (s in project.libraries) {
 				kfile += 'p.addLibrary("${s}");\n';
