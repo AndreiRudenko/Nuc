@@ -17,11 +17,14 @@ import nuc.render.Shaders;
 import nuc.graphics.Drawable;
 import nuc.graphics.Texture;
 import nuc.graphics.Font;
+import nuc.graphics.Video;
 import nuc.graphics.Color;
+import nuc.graphics.Mesh;
 import nuc.graphics.utils.PolylineRenderer;
 import nuc.graphics.utils.ShapeRenderer;
 import nuc.graphics.utils.GraphicsState;
 import nuc.graphics.utils.DrawStats;
+import nuc.graphics.utils.Batcher;
 
 import nuc.math.FastMatrix3;
 import nuc.math.Vector2;
@@ -39,17 +42,8 @@ import nuc.utils.FastFloat;
 
 using StringTools;
 
-/*
-dynamic geometry batching
-static geometry batching
-
-draw lines, fills, images, text
-draw custom geometry
-
- */
-
 @:allow(nuc.App)
-class Graphics {
+class Graphics extends Batcher {
 
 	static public var fontDefault:Font;
 	static public var textureDefault:Texture;
@@ -113,13 +107,7 @@ class Graphics {
 		structure.add("texId", VertexData.Float1);
 		structure.add("texFormat", VertexData.Float1);
 		
-		// if(kha.Image.maxBound >= 16) {
-		// 	maxShaderTextures = 16;
-		// 	pipelineMultiTextured = new Pipeline([structure], Shaders.multitextured_vert, Shaders.multitextured16_frag);
-		// } else {
-			maxShaderTextures = 8;
-			pipelineMultiTextured = new Pipeline([structure], Shaders.multitextured_vert, Shaders.multitextured8_frag);
-		// }
+		pipelineMultiTextured = new Pipeline([structure], Shaders.multitextured_vert, Shaders.multitextured8_frag);
 
 		pipelineMultiTextured.setBlending(BlendFactor.BlendOne, BlendFactor.InverseSourceAlpha, BlendOperation.Add);
 		pipelineMultiTextured.compile();
@@ -573,10 +561,8 @@ class Graphics {
 		_font = _savedState.font;
 		fontSize = _savedState.fontSize;
 
-		if(_savedState.useScissor) {
-			_scissor.copyFrom(_savedState.scissor);
-		}
-
+		if(_savedState.useScissor) _scissor.copyFrom(_savedState.scissor);
+		
 		_wasSaved = false;
 
 		if(isDrawing) {
@@ -714,23 +700,7 @@ class Graphics {
 		}
 	}
 
-	// batch
-	// public function beginBatch() {}
-	// public function endBatch() {}
-	// public function flushBatch() {}
-
-	// // cache
-	// public function createCache(verticesCount:Int = 4096, indicesCount:Int = 4096*2):Int {
-	// 	return 0;
-	// }
-	// public function beginCache(id:Int, startGeom:Int = 0) {}
-	// public function endCache() {}
-	// public function clearCache(id:Int) {}
-	// public function disposeCache(id:Int) {}
-	// public function drawCache(id:Int, startGeom:Int = 0, count:Int = -1) {}
-
 	// draw
-
 	public function draw(drawable:Drawable) {
 		drawable.draw(this);
 	}
@@ -746,7 +716,6 @@ class Graphics {
 
 		if(rw == null) rw = texWidth;
 		if(rh == null) rh = texHeight;
-
 
 		beginGeometry(texture, 4, 6);
 
@@ -818,6 +787,9 @@ class Graphics {
 			}
 			i++;
 		}
+	}
+
+	public function drawVideo(video:Video, x:FastFloat = 0, y:FastFloat = 0, ?w:FastFloat, ?h:FastFloat) {
 
 	}
 
@@ -885,7 +857,7 @@ class Graphics {
 	}
 
 	// geometry
-	public function beginGeometry(texture:Texture, verticesCount:Int, indicesCount:Int) {
+	override function beginGeometry(texture:Texture, verticesCount:Int, indicesCount:Int) {
 		Log.assert(isDrawing, 'Graphics: begin must be called before beginGeometry');
 		Log.assert(!_inGeometryMode, 'Graphics: endGeometry must be called before beginGeometry');
 
@@ -913,7 +885,11 @@ class Graphics {
 		stats.indices += indicesCount;
 	}
 
-	public function addQuadGeometry(x:FastFloat, y:FastFloat, w:FastFloat, h:FastFloat, c:Color, rx:FastFloat, ry:FastFloat, rw:FastFloat, rh:FastFloat) {
+	override function addQuadGeometry(
+		x:FastFloat, y:FastFloat, w:FastFloat, h:FastFloat, 
+		c:Color = Color.WHITE, 
+		rx:FastFloat = 0, ry:FastFloat = 0, rw:FastFloat = 0, rh:FastFloat = 0
+	) {
 		// simd
 		// p0x = a * x   + c * y   + tx
 		// p1x = a * x+w + c * y   + tx
@@ -935,7 +911,6 @@ class Graphics {
 		var a:FastFloat = 1;
 
 		#if cpp
-
 		final ma = Float32x4.loadAllFast(_transform.a);
 		final mb = Float32x4.loadAllFast(_transform.b);
 		final mc = Float32x4.loadAllFast(_transform.c);
@@ -973,7 +948,6 @@ class Graphics {
 
 		_vertices[n + 30] = p3x; 
 		_vertices[n + 31] = p3y; 
-
 
 		final ca = Float32x4.loadFast(c.rB, c.gB, c.bB, c.aB);
 		final cb = Float32x4.loadFast(_color.rB, _color.gB, _color.bB, _color.aB);
@@ -1083,7 +1057,7 @@ class Graphics {
 		_indPos += 6;
 	}
 
-	public function addVertex(x:FastFloat, y:FastFloat, c:Color = Color.WHITE, u:FastFloat = 0, v:FastFloat = 0) {
+	override function addVertex(x:FastFloat, y:FastFloat, c:Color = Color.WHITE, u:FastFloat = 0, v:FastFloat = 0) {
 		_vertexIdx = _vertPos * Graphics.vertexSizeMultiTextured;
 
 		_vertices[_vertexIdx + 0] = _transform.getTransformX(x, y);
@@ -1105,20 +1079,16 @@ class Graphics {
 		_vertPos++;
 	}
 
-	public function addIndex(i:Int) {
+	override function addIndex(i:Int) {
 		_indices[_indPos++] = _vertStartPos + i;
 	}
 
-	public function endGeometry() {
+	override function endGeometry() {
 		Log.assert(_inGeometryMode, 'Graphics: beginGeometry must be called before endGeometry');
 		Log.assert(_vertPos == _vertsDraw, 'Graphics: added vertices($_vertPos) not equals of requested($_vertsDraw) in beginGeometry');
 		Log.assert(_indPos == _indicesDraw, 'Graphics: added indicies($_indPos) is not equals of requested($_indicesDraw) in beginGeometry');
 		_inGeometryMode = false;
 	}
-
-	// mesh
-	// public function drawMesh(mesh) {}
-	// public function drawMeshInstanced(mesh, instances:Int) {}
 
 	function getScale() {
 		return _transform.a * _transform.a + _transform.b * _transform.b;

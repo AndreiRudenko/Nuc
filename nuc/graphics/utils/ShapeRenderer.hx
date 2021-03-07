@@ -1,5 +1,6 @@
 package nuc.graphics.utils;
 
+import nuc.graphics.utils.Batcher;
 import nuc.utils.FastFloat;
 import nuc.utils.Math;
 import nuc.math.FastMatrix3;
@@ -9,41 +10,30 @@ class ShapeRenderer {
 	public var segmentSmooth:FastFloat = 5;
 	public var transformScale:FastFloat = 1;
 
-	var g:Graphics;
+	var b:Batcher;
 
-	public function new(g:Graphics) {
-		this.g = g;
+	public function new(b:Batcher) {
+		this.b = b;
 	}
 
 	public function fillTriangle(x0:FastFloat, y0:FastFloat, x1:FastFloat, y1:FastFloat, x2:FastFloat, y2:FastFloat) {
-		g.beginGeometry(null, 3, 3);
+		b.beginGeometry(null, 3, 3);
 
-		g.addVertex(x0, y0);
-		g.addVertex(x1, y1);
-		g.addVertex(x2, y2);
-		g.addIndex(0);
-		g.addIndex(1);
-		g.addIndex(2);
+		b.addVertex(x0, y0);
+		b.addVertex(x1, y1);
+		b.addVertex(x2, y2);
+		b.addIndex(0);
+		b.addIndex(1);
+		b.addIndex(2);
 
-		g.endGeometry();
+		b.endGeometry();
 	}
 	public function fillRectangle(x:FastFloat, y:FastFloat, w:FastFloat, h:FastFloat) {
 		if(w == 0 || h == 0) return;
 
-		g.beginGeometry(null, 4, 6);
-
-		g.addVertex(x, y);
-		g.addVertex(x+w, y);
-		g.addVertex(x+w, y+h);
-		g.addVertex(x, y+h);
-		g.addIndex(0);
-		g.addIndex(1);
-		g.addIndex(2);
-		g.addIndex(0);
-		g.addIndex(2);
-		g.addIndex(3);
-
-		g.endGeometry();
+		b.beginGeometry(null, 4, 6);
+		b.addQuadGeometry(x, y, w, h);
+		b.endGeometry();
 	}
 
 	public function fillEllipse(x:FastFloat, y:FastFloat, rx:FastFloat, ry:FastFloat, segments:Int) {
@@ -65,24 +55,24 @@ class ShapeRenderer {
 		var py:FastFloat = 0;
 		var t:FastFloat = 0;
 
-		g.beginGeometry(null, segments+1, segments*3);
+		b.beginGeometry(null, segments+1, segments*3);
 
 		var i:Int = 0;
 		while(i < segments) {
-			g.addVertex(x + px * rx, y + py * ry);
+			b.addVertex(x + px * rx, y + py * ry);
 
 			t = px;
 			px = c * px - s * py;
 			py = s * t + c * py;
 
-			g.addIndex(i);
-			g.addIndex((i+1) % segments);
-			g.addIndex(segments);
+			b.addIndex(i);
+			b.addIndex((i+1) % segments);
+			b.addIndex(segments);
 			i++;
 		}
-		g.addVertex(x, y);
+		b.addVertex(x, y);
 
-		g.endGeometry();
+		b.endGeometry();
 	}
 
 	public function fillArc(x:FastFloat, y:FastFloat, radius:FastFloat, angleStart:FastFloat, angle:FastFloat, segments:Int) {
@@ -112,11 +102,11 @@ class ShapeRenderer {
 
 		if(absAngle < Math.TAU) segsAdd = 1;
 		
-		g.beginGeometry(null, segments+segsAdd+1, segments*3+3);
+		b.beginGeometry(null, segments+segsAdd+1, segments*3+3);
 
 		var i:Int = 0;
 		while(i < segments) {
-			g.addVertex(x + px * radius, y + py * radius);
+			b.addVertex(x + px * radius, y + py * radius);
 			t = px;
 			if(angle > 0) {
 				px = px * c - py * s;
@@ -126,38 +116,38 @@ class ShapeRenderer {
 				py = -t * s + py * c;
 			}
 
-			g.addIndex(i);
-			g.addIndex((i+1) % (segments + segsAdd));
-			g.addIndex(segments + segsAdd);
+			b.addIndex(i);
+			b.addIndex((i+1) % (segments + segsAdd));
+			b.addIndex(segments + segsAdd);
 
 			i++;
 		}
 
-		if(absAngle < Math.TAU) g.addVertex(x + px * radius, y + py * radius);
+		if(absAngle < Math.TAU) b.addVertex(x + px * radius, y + py * radius);
 		
-		g.addVertex(x, y);
+		b.addVertex(x, y);
 
-		g.addIndex(0);
-		g.addIndex(segments);
-		g.addIndex(segments + segsAdd);
+		b.addIndex(0);
+		b.addIndex(segments);
+		b.addIndex(segments + segsAdd);
 
-		g.endGeometry();
+		b.endGeometry();
 	}
 
 	public function fillPolygon(points:Array<FastFloat>, indices:Array<Int>, ?colors:Array<Color>) {
-		g.beginGeometry(null, points.length, indices.length);
+		b.beginGeometry(null, points.length, indices.length);
 		var i:Int = 0;
 		if(colors != null) {
 			while(i < points.length) {
-				g.addVertex(points[i], points[i+1], colors[i]);
+				b.addVertex(points[i], points[i+1], colors[i]);
 				i+=2;
 			}
 		} else {
-			while(i < points.length) g.addVertex(points[i++], points[i++]);
+			while(i < points.length) b.addVertex(points[i++], points[i++]);
 		}
 		i = 0;
-		while(i < indices.length) g.addIndex(indices[i++]);
-		g.endGeometry();
+		while(i < indices.length) b.addIndex(indices[i++]);
+		b.endGeometry();
 	}
 
 }

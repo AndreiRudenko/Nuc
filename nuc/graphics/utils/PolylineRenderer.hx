@@ -1,6 +1,7 @@
 package nuc.graphics.utils;
 
 import nuc.graphics.Color;
+import nuc.graphics.utils.Batcher;
 import nuc.math.FastMatrix3;
 import nuc.math.FastVector2;
 import nuc.utils.FastFloat;
@@ -16,11 +17,11 @@ class PolylineRenderer {
 	public var miterMinAngle:FastFloat = 10/180;
 	public var transformScale:FastFloat = 1;
 
-	var g:Graphics;
+	var b:Batcher;
 	var _polySegmentPool:DynamicPool<PolySegment>;
 
-	public function new(g:Graphics) {
-		this.g = g;
+	public function new(b:Batcher) {
+		this.b = b;
 		_polySegmentPool = new DynamicPool<PolySegment>(64, function() { return new PolySegment(); });
 	}
 
@@ -274,22 +275,22 @@ class PolylineRenderer {
 				drawJoint(segment, segments[i + 1], end1, end2, nextStart1, nextStart2, roundMinAngle, miterMinAngle);
 			}
 
-			g.beginGeometry(null, 4, 6);
+			b.beginGeometry(null, 4, 6);
 
-			g.addVertex(start1.x, start1.y, Color.WHITE);
-			g.addVertex(end1.x, end1.y, Color.WHITE);
-			g.addVertex(end2.x, end2.y, Color.WHITE);
-			g.addVertex(start2.x, start2.y, Color.WHITE);
+			b.addVertex(start1.x, start1.y, Color.WHITE);
+			b.addVertex(end1.x, end1.y, Color.WHITE);
+			b.addVertex(end2.x, end2.y, Color.WHITE);
+			b.addVertex(start2.x, start2.y, Color.WHITE);
 
-			g.addIndex(0);
-			g.addIndex(1);
-			g.addIndex(2);
+			b.addIndex(0);
+			b.addIndex(1);
+			b.addIndex(2);
 
-			g.addIndex(0);
-			g.addIndex(2);
-			g.addIndex(3);
+			b.addIndex(0);
+			b.addIndex(2);
+			b.addIndex(3);
 
-			g.endGeometry();
+			b.endGeometry();
 
 			start1.copyFrom(nextStart1);
 			start2.copyFrom(nextStart2);
@@ -352,35 +353,35 @@ class PolylineRenderer {
 		if(lineJoint == LineJoint.MITER){
 			var oVec = new FastVector2(0, 0);
 			if(LineSegment.intersection(outer1, outer2, true, oVec)) {
-				g.beginGeometry(null, 4, 6);
+				b.beginGeometry(null, 4, 6);
 
-				g.addVertex(outer1.b.x, outer1.b.y, Color.WHITE);
-				g.addVertex(oVec.x, oVec.y, Color.WHITE);
-				g.addVertex(outer2.a.x, outer2.a.y, Color.WHITE);
-				g.addVertex(iVec.x, iVec.y, Color.WHITE);
+				b.addVertex(outer1.b.x, outer1.b.y, Color.WHITE);
+				b.addVertex(oVec.x, oVec.y, Color.WHITE);
+				b.addVertex(outer2.a.x, outer2.a.y, Color.WHITE);
+				b.addVertex(iVec.x, iVec.y, Color.WHITE);
 
-				g.addIndex(0);
-				g.addIndex(1);
-				g.addIndex(2);
+				b.addIndex(0);
+				b.addIndex(1);
+				b.addIndex(2);
 
-				g.addIndex(0);
-				g.addIndex(2);
-				g.addIndex(3);
+				b.addIndex(0);
+				b.addIndex(2);
+				b.addIndex(3);
 
-				g.endGeometry();
+				b.endGeometry();
 			}
 		} else if(lineJoint == LineJoint.BEVEL) {
-			g.beginGeometry(null, 3, 3);
+			b.beginGeometry(null, 3, 3);
 
-			g.addVertex(outer1.b.x, outer1.b.y, Color.WHITE);
-			g.addVertex(outer2.a.x, outer2.a.y, Color.WHITE);
-			g.addVertex(iVec.x, iVec.y, Color.WHITE);
+			b.addVertex(outer1.b.x, outer1.b.y, Color.WHITE);
+			b.addVertex(outer2.a.x, outer2.a.y, Color.WHITE);
+			b.addVertex(iVec.x, iVec.y, Color.WHITE);
 
-			g.addIndex(0);
-			g.addIndex(1);
-			g.addIndex(2);
+			b.addIndex(0);
+			b.addIndex(1);
+			b.addIndex(2);
 
-			g.endGeometry();
+			b.endGeometry();
 		} else if(lineJoint == LineJoint.ROUND) {
 			drawTriangleFan(iVec, segment1.center.b, outer1.b, outer2.a, clockwise, roundMinAngle);
 		}
@@ -419,7 +420,7 @@ class PolylineRenderer {
 		var endPoint:FastVector2 = new FastVector2(0,0);
 
 		var lastIdx = numTriangles * 2;
-		g.beginGeometry(null, numTriangles * 2 + 1, numTriangles * 3);
+		b.beginGeometry(null, numTriangles * 2 + 1, numTriangles * 3);
 		while(i < numTriangles) {
 			if (i + 1 == numTriangles) {
 				endPoint.copyFrom(end);
@@ -430,18 +431,18 @@ class PolylineRenderer {
 				py = s * t + c * py;
 			}
 
-			g.addVertex(startPoint.x, startPoint.y, Color.WHITE);
-			g.addVertex(endPoint.x, endPoint.y, Color.WHITE);
+			b.addVertex(startPoint.x, startPoint.y, Color.WHITE);
+			b.addVertex(endPoint.x, endPoint.y, Color.WHITE);
 
-			g.addIndex(i * 2);
-			g.addIndex(i * 2 + 1);
-			g.addIndex(lastIdx);
+			b.addIndex(i * 2);
+			b.addIndex(i * 2 + 1);
+			b.addIndex(lastIdx);
 
 			startPoint.copyFrom(endPoint);
 			i++;
 		}
-		g.addVertex(connectTo.x, connectTo.y, Color.WHITE);
-		g.endGeometry();
+		b.addVertex(connectTo.x, connectTo.y, Color.WHITE);
+		b.endGeometry();
 	}
 }
 
