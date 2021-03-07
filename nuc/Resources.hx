@@ -94,7 +94,7 @@ class Resources {
 	public function load(name:String, ?onComplete:(r:Resource)->Void, uncompressSound:Bool = true) {
 		var res = cache.get(name);
 		if(res != null) {
-			Log.warning("resource already exists: " + name);
+			Log.warning('resource already exists: $name');
 			if(onComplete != null) onComplete(res);
 			return;
 		}
@@ -116,13 +116,13 @@ class Resources {
 		var res:BytesResource = cast cache.get(name);
 
 		if(res != null) {
-			Log.warning("bytes resource already exists: " + name);
+			Log.warning('bytes resource already exists: $name');
 			// res.ref++;
 			if(onComplete != null) onComplete(res);
 			return;
 		}
 
-		Log.debug("bytes / loading / " + name);
+		Log.debug('bytes / loading / $name');
 
 		kha.Assets.loadBlobFromPath(
 			getResourcePath(name), 
@@ -140,12 +140,12 @@ class Resources {
 		var res:TextResource = cast cache.get(name);
 
 		if(res != null) {
-			Log.warning("text resource already exists: " + name);
+			Log.warning('text resource already exists: $name');
 			if(onComplete != null) onComplete(res);
 			return;
 		}
 
-		Log.debug("text / loading / " + name);
+		Log.debug('text / loading / $name');
 
 		kha.Assets.loadBlobFromPath(
 			getResourcePath(name), 
@@ -163,12 +163,12 @@ class Resources {
 		var res:JsonResource = cast cache.get(name);
 
 		if(res != null) {
-			Log.warning("json resource already exists: " + name);
+			Log.warning('json resource already exists: $name');
 			if(onComplete != null) onComplete(res);
 			return;
 		}
 
-		Log.debug("json / loading / " + name);
+		Log.debug('json / loading / $name');
 
 		kha.Assets.loadBlobFromPath(
 			getResourcePath(name), 
@@ -186,12 +186,12 @@ class Resources {
 		var res:Texture = cast cache.get(name);
 
 		if(res != null) {
-			Log.warning("texture resource already exists: " + name);
+			Log.warning('texture resource already exists: $name');
 			if(onComplete != null) onComplete(res);
 			return;
 		}
 
-		Log.debug("texture / loading / " + name);
+		Log.debug('texture / loading / $name');
 
 		kha.Assets.loadImageFromPath(
 			getResourcePath(name), 
@@ -210,12 +210,12 @@ class Resources {
 		var res:Font = cast cache.get(name);
 
 		if(res != null) {
-			Log.warning("font resource already exists: " + name);
+			Log.warning('font resource already exists: $name');
 			if(onComplete != null) onComplete(res);
 			return;
 		}
 
-		Log.debug("font / loading / " + name);
+		Log.debug('font / loading / $name');
 
 		kha.Assets.loadFontFromPath(
 			getResourcePath(name), 
@@ -233,12 +233,12 @@ class Resources {
 		var res:Video = cast cache.get(name);
 
 		if(res != null) {
-			Log.warning("video resource already exists: " + name);
+			Log.warning('video resource already exists: $name');
 			if(onComplete != null) onComplete(res);
 			return;
 		}
 
-		Log.debug("video / loading / " + name);
+		Log.debug('video / loading / $name');
 
 		kha.Assets.loadVideoFromPath(
 			getResourcePath(name), 
@@ -256,12 +256,12 @@ class Resources {
 		var res:Sound = cast cache.get(name);
 
 		if(res != null) {
-			Log.warning("sound resource already exists: " + name);
+			Log.warning('sound resource already exists: $name');
 			if(onComplete != null) onComplete(res);
 			return;
 		}
 
-		Log.debug("sound / loading / " + name);
+		Log.debug('sound / loading / $name');
 
 		kha.Assets.loadSoundFromPath(
 			getResourcePath(name), 
