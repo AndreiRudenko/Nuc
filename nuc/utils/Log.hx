@@ -32,7 +32,7 @@ class Log {
 		var file = Path.withoutDirectory(Context.getPosInfos(Context.currentPos()).file);
 		var context = Path.withoutExtension(file);
 		if(Std.int(LogLevel.VERBOSE) >= Std.int(_minLevel)) {
-			return macro @:pos(Context.currentPos()) trace('${_spaces}V / $context / ' + $value);
+			return macro @:pos(Context.currentPos()) trace($v{'${_spaces}V / $context / '} + $value);
 		}
 		#end
 		return macro null;
@@ -43,7 +43,7 @@ class Log {
 		var file = Path.withoutDirectory(Context.getPosInfos(Context.currentPos()).file);
 		var context = Path.withoutExtension(file);
 		if(Std.int(LogLevel.DEBUG) >= Std.int(_minLevel)) {
-			return macro @:pos(Context.currentPos()) trace('${_spaces}D / $context / ' + $value);
+			return macro @:pos(Context.currentPos()) trace($v{'${_spaces}D / $context / '} + $value);
 		}
 		#end
 		return macro null;
@@ -54,7 +54,7 @@ class Log {
 		var file = Path.withoutDirectory(Context.getPosInfos(Context.currentPos()).file);
 		var context = Path.withoutExtension(file);
 		if(Std.int(LogLevel.INFO) >= Std.int(_minLevel)) {
-			return macro @:pos(Context.currentPos()) trace('${_spaces}I / $context / ' + $value);
+			return macro @:pos(Context.currentPos()) trace($v{'${_spaces}I / $context / '} + $value);
 		}
 		#end
 		return macro null;
@@ -65,7 +65,7 @@ class Log {
 		var file = Path.withoutDirectory(Context.getPosInfos(Context.currentPos()).file);
 		var context = Path.withoutExtension(file);
 		if(Std.int(LogLevel.WARNING) >= Std.int(_minLevel)) {
-			return macro @:pos(Context.currentPos()) trace('${_spaces}W / $context / ' + $value);
+			return macro @:pos(Context.currentPos()) trace($v{'${_spaces}W / $context / '} + $value);
 		}
 		#end
 		return macro null;
@@ -76,7 +76,7 @@ class Log {
 		var file = Path.withoutDirectory(Context.getPosInfos(Context.currentPos()).file);
 		var context = Path.withoutExtension(file);
 		if(Std.int(LogLevel.ERROR) >= Std.int(_minLevel)) {
-			return macro @:pos(Context.currentPos()) trace('${_spaces}E / $context / ' + $value);
+			return macro @:pos(Context.currentPos()) trace($v{'${_spaces}E / $context / '} + $value);
 		}
 		#end
 		return macro null;
@@ -87,7 +87,7 @@ class Log {
 		var file = Path.withoutDirectory(Context.getPosInfos(Context.currentPos()).file);
 		var context = Path.withoutExtension(file);
 		if(Std.int(LogLevel.ERROR) >= Std.int(_minLevel)) {
-			return macro @:pos(Context.currentPos()) trace('${_spaces}! / $context / ' + $value);
+			return macro @:pos(Context.currentPos()) trace($v{'${_spaces}! / $context / '} + $value);
 		}
 		#end
 		return macro null;
@@ -103,7 +103,8 @@ class Log {
 			}
 
 			return macro @:pos(Context.currentPos()) {
-				if(!$expr) throw('$str' + $reason);
+				// if(!$expr) throw('$str' + $reason);
+				if(!$expr) throw($v{'$str $reason'});
 			}
 		#end
 		return macro null;

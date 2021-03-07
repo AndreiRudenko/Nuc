@@ -1,8 +1,9 @@
 package nuc.graphics;
 
 import nuc.utils.Math;
+import kha.simd.Float32x4;
 
-abstract Color(Int) from kha.Color to kha.Color {
+abstract Color(Int) from kha.Color to kha.Color from Int to Int {
 
 	static public function random(?includeAlpha:Bool = false):Color {
 		return new Color(Math.random(), Math.random(), Math.random(), includeAlpha ? Math.random() : 1.0 );
@@ -66,12 +67,20 @@ abstract Color(Int) from kha.Color to kha.Color {
 	}
 
 	public inline function multiply(other:Color):Color {
+		// #if cpp
+		// var a = Float32x4.loadFast(rB, gB, bB, aB);
+		// var b = Float32x4.loadFast(other.rB, other.gB, other.bB, other.aB);
+		// var f = Float32x4.loadAllFast(0xFF);
+		// var c = Float32x4.add((Float32x4.mul(a, b)), f);
+
+		// #else
 		return setBytes(
 			((rB * other.rB) + 0xFF) >> 8,
 			((gB * other.gB) + 0xFF) >> 8,
 			((bB * other.bB) + 0xFF) >> 8,
 			((aB * other.aB) + 0xFF) >> 8
 		);
+		// #end
 	}
 
 	public inline function setHSB(hue:Float, saturation:Float, brightness:Float):Color {
