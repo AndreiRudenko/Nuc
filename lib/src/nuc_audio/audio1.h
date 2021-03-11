@@ -43,20 +43,20 @@ static struct NucAudioChannel *NucAudioChannel_create(float *floats) {
 	// rc_floats_inc(floats);
 	struct NucAudioChannel *channel = (struct NucAudioChannel *)malloc(sizeof(struct NucAudioChannel));
 	channel->data = floats;
-	// KINC_ATOMIC_EXCHANGE_32(&channel->reference_count, 1);
+	KINC_ATOMIC_EXCHANGE_32(&channel->reference_count, 1);
 	return channel;
 }
 
 static void NucAudioChannel_inc(struct NucAudioChannel *channel) {
-	// KINC_ATOMIC_INCREMENT(&channel->reference_count);
+	KINC_ATOMIC_INCREMENT(&channel->reference_count);
 }
 
 static void NucAudioChannel_dec(struct NucAudioChannel *channel) {
-	// int value = KINC_ATOMIC_DECREMENT(&channel->reference_count);
-	// if (value == 1) {
-	// 	rc_floats_dec(channel->data);
-	// 	free(channel);
-	// }
+	int value = KINC_ATOMIC_DECREMENT(&channel->reference_count);
+	if (value == 1) {
+		// rc_floats_dec(channel->data);
+		free(channel);
+	}
 }
 
 static void NucAudioChannel_calcVolume(struct NucAudioChannel *channel) {
