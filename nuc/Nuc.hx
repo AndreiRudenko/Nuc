@@ -14,7 +14,7 @@ class Nuc {
 	static public var renderer(get, never):nuc.Renderer;
 	static public var input(get, never):nuc.Input;
 	static public var resources(get, never):nuc.Resources;
-	// static public var audio(get, never):nuc.Audio;
+	static public var audio(get, never):nuc.Audio;
 
 	static inline function get_display() return Display.primary;
 	static inline function get_window() return app.window;
@@ -23,7 +23,7 @@ class Nuc {
 	static inline function get_renderer() return app.renderer;
 	static inline function get_input() return app.input;
 	static inline function get_resources() return app.resources;
-	// static inline function get_audio() return app.audio;
+	static inline function get_audio() return app.audio;
 
 	static public var time(get, never):Float;
 	static inline function get_time() return app.time;

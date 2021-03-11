@@ -29,7 +29,7 @@ class App {
 	public var renderer(default, null):Renderer;
 	public var input(default, null):Input;
 	public var resources(default, null):Resources;
-	// public var audio(default, null):nuc.Audio;
+	public var audio(default, null):nuc.Audio;
 
 	public var inFocus(default, null):Bool = true;
 
@@ -174,7 +174,8 @@ class App {
 		
 		Graphics.setup();
 		graphics = new Graphics(renderer, _options.graphics);
-		// audio = new Audio();
+		
+		audio = new Audio();
 		
 		_lastTime = time;
 		_lastFrameTime = realTime;
