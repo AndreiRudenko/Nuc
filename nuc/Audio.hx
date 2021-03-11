@@ -14,6 +14,9 @@ import nuc.utils.Math;
 ')
 class Audio {
 
+	static public var samplesPerSecond(get, never):Int;
+	static inline function get_samplesPerSecond() return kha.audio2.Audio.samplesPerSecond;
+
 	@:functionCode('Audio_init();')
 	static function _init():Void {}
 
@@ -44,6 +47,10 @@ class Audio {
 
 	public function play(sound:Sound, volume:Float = 1, pan:Float = 0, playbackRate:Float = 1, loop:Bool = false):nuc.audio.AudioChannel {
 		return null;
+	}
+
+	function playAgain(channel:SoundChannel) {
+		
 	}
 
 }

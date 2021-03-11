@@ -35,10 +35,14 @@ class SoundChannel implements nuc.audio.AudioChannel {
 	@:functionCode('
 		float value = (float)v;
 
+		if(value < 0.0f) {
+			value = 0.0f; 
+		}
+
 		KINC_ATOMIC_EXCHANGE_FLOAT(&channel->volume, value);
 		NucAudioChannel_calcVolume(channel);
 
-		return v;
+		return (Float)value;
 	')
 	function set_volume(v:Float) return 0;
 	
@@ -129,50 +133,77 @@ class SoundChannel implements nuc.audio.AudioChannel {
 
 class SoundChannel implements AudioChannel {
 
+
 	public var volume(get, set):Float;
-	private function get_volume() return 0;
-	private function set_volume(value:Float) {
-		return 0;
+	var _volume:Float = 1;
+	inline function get_volume() return _volume;
+	function set_volume(v:Float) {
+		_volume = v;
+		if(_volume < 0) _volume = 0;
+		calcVolume();
+		return _volume;
 	}
 
 	public var pan(get, set):Float;
-	private function get_pan() return 0;
-	private function set_pan(value:Float) {
-		return 0;
+	var _pan:Float = 0;
+	inline function get_pan() return _pan;
+	function set_pan(v:Float) {
+		_pan = Math.clamp(v, -1, 1);
+		calcVolume();
+		return _pan;
 	}
 
 	public var position(get, set):Float;
-	private function get_position() return 0;
-	private function set_position(value:Float) {
-		return 0;
+	var _position:Float = 0;
+	inline function get_position() return _position;
+	function set_position(v:Float) {
+		return _position = v;
 	}
 
 	public var playbackRate(get, set):Float;
-	private function get_playbackRate() return 0;
-	private function set_playbackRate(value:Float) {
-		return 0;
+	var _playbackRate:Float = 1;
+	inline function get_playbackRate() return _playbackRate;
+	function set_playbackRate(v:Float) {
+		return _playbackRate = v;
 	}
 
-	public var finished(get, null):Bool;
-	private function get_finished() return false;
+	public var finished(get, never):Bool;
+	function get_finished() return stopped;
 
-	public var length(get, null):Float;
-	private function get_length() return 0;
+	public var length(get, never):Float;
+	function get_length() return data.length / Audio.samplesPerSecond / 2; // 44.1 khz in stereo
+
+	var data:Float32Array = null;
+
+	var l:Float = 0.7071;
+	var r:Float = 0.7071;
+
+	var paused:Bool = false;
+	var stopped:Bool = false;
+	var looping:Bool = false;
 
 	public function new() {
 
 	}
 
 	public function play() {
-
+		paused = false;
+		stopped = false;
+		// Nuc.audio.playAgain(this);
 	}
 
 	public function pause() {
-
+		paused = true;
 	}
 
 	public function stop() {
+		stopped = true;
+	}
 
+	function calcVolume() {
+		var a = (_pan + 1) * Math.PI / 4;
+		l = Math.cos(a) * _volume;
+		r = Math.sin(a) * _volume;
 	}
 
 }
