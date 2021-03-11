@@ -23,6 +23,9 @@ class Sound extends Resource {
 	inline function get_uncompressedData() return sound.uncompressedData;
 	inline function set_uncompressedData(v:Float32Array) return sound.uncompressedData = v;
 
+	public var sampleRate(get, never):Int;
+	inline function get_sampleRate() return sound.sampleRate;
+
 	public function new(?sound:kha.Sound) {
 		if(sound == null) sound = new kha.Sound();
 		
