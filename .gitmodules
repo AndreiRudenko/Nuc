@@ -1,6 +1,6 @@
 [submodule "tools/nucli"]
 	path = tools/nucli
-	url = https://github.com/denuca/nucli
+	url = https://github.com/nuclibs/nucli
 [submodule "Kha"]
 	path = Kha
-	url = https://github.com/denuca/Kha
+	url = https://github.com/Kode/Kha
