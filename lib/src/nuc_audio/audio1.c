@@ -1,5 +1,8 @@
 #include <kinc/pch.h>
 
+#define STB_VORBIS_HEADER_ONLY
+#include <kinc/audio1/stb_vorbis.c>
+
 #include "audio1.h"
 
 #include <kinc/audio2/audio.h>
@@ -14,8 +17,10 @@
 static kinc_mutex_t mutex;
 
 struct NucAudioChannel *soundChannels[CHANNEL_COUNT];
+struct NucStreamChannel *streamChannels[CHANNEL_COUNT];
 
 struct NucAudioChannel *internalSoundChannels[CHANNEL_COUNT];
+struct NucStreamChannel *internalStreamChannels[CHANNEL_COUNT];
 
 static float round_float(float value) {
 	return floorf(value + 0.5f);
@@ -176,6 +181,88 @@ float NucAudioChannel_length_in_seconds(struct NucAudioChannel *channel) {
 	return channel->data_length / (float)kinc_a2_samples_per_second / 2.0f; // Stereo
 }
 
+// stream
+void NucStreamChannel_nextSamples(struct NucStreamChannel *channel, float *requestedSamples, int requestedLength, int sampleRate) {
+	if (channel->vorbis == NULL) return;
+
+	int channels = 2;
+
+	int read = stb_vorbis_get_samples_float_interleaved(channel->vorbis, channels, requestedSamples, requestedLength);
+	if (read < requestedLength / channels) {
+		if (channel->looping) {
+			stb_vorbis_seek_start(channel->vorbis);
+		} else {
+			channel->stopped = true;
+		}
+
+		for (int i = read * channels; i < requestedLength; ++i) {
+			requestedSamples[i] = 0;
+		}
+	}
+}
+
+void NucStreamChannel_playAgain(struct NucStreamChannel *channel) {
+	kinc_mutex_lock(&mutex);
+
+	if (channel->vorbis != NULL) {
+		if (channel->stopped) {
+			channel->stopped = false;
+			stb_vorbis_seek_start(channel->vorbis);
+		}
+	}
+
+	int i;
+	bool foundChannel = false;
+	for (i = 0; i < CHANNEL_COUNT; ++i) {
+		if (streamChannels[i] == NULL) {
+			NucStreamChannel_inc(channel);
+			streamChannels[i] = channel;
+			foundChannel = true;
+			break;
+		}
+		if (streamChannels[i] == channel) {
+			foundChannel = true;
+			break;
+		}
+		if (streamChannels[i]->paused || streamChannels[i]->stopped) {
+			NucStreamChannel_dec(streamChannels[i]);
+			NucStreamChannel_inc(channel);
+			streamChannels[i] = channel;
+			foundChannel = true;
+			break;
+		}
+	}
+	++i;
+	for (; i < CHANNEL_COUNT; ++i) {
+		if (streamChannels[i] == channel) {
+			NucStreamChannel_dec(streamChannels[i]);
+			streamChannels[i] = NULL;
+		}
+	}
+	if (!foundChannel) {
+		for (i = 0; i < CHANNEL_COUNT; ++i) {
+			if (streamChannels[i] == NULL) {
+				NucStreamChannel_inc(channel);
+				streamChannels[i] = channel;
+				foundChannel = true;
+				break;
+			}
+			if (streamChannels[i] == channel) {
+				foundChannel = true;
+				break;
+			}
+			if (streamChannels[i]->paused || streamChannels[i]->stopped || streamChannels[i]->volume == 0.0f) {
+				NucStreamChannel_dec(streamChannels[i]);
+				NucStreamChannel_inc(channel);
+				streamChannels[i] = channel;
+				foundChannel = true;
+				break;
+			}
+		}
+	}
+	kinc_mutex_unlock(&mutex);
+}
+
 struct Buffer {
 	int size;
 	int write_location;
@@ -209,9 +296,15 @@ static void mix(kinc_a2_buffer_t *buffer, int samples) {
 		if (soundChannels[i] != NULL) {
 			NucAudioChannel_inc(soundChannels[i]);
 		}
+		if (streamChannels[i] != NULL) {
+			NucStreamChannel_inc(streamChannels[i]);
+		}
+
 		internalSoundChannels[i] = soundChannels[i];
+		internalStreamChannels[i] = streamChannels[i];
 	}
 	kinc_mutex_unlock(&mutex);
+
 
 	for (int i = 0; i < CHANNEL_COUNT; ++i) {
 		struct NucAudioChannel *channel = internalSoundChannels[i];
@@ -226,13 +319,29 @@ static void mix(kinc_a2_buffer_t *buffer, int samples) {
 	}
 
 	for (int i = 0; i < CHANNEL_COUNT; ++i) {
+		struct NucStreamChannel *channel = internalStreamChannels[i];
+		if (channel == NULL || channel->paused || channel->stopped) {
+			continue;
+		}
+
+		NucStreamChannel_nextSamples(channel, sampleCache1, samples, kinc_a2_samples_per_second);
+		for (int j = 0; j < samples; j+=2) {
+			sampleCache2[j] += sampleCache1[j] * channel->l;
+			sampleCache2[j+1] += sampleCache1[j+1] * channel->r;
+		}
+
+	}
+
+	for (int i = 0; i < CHANNEL_COUNT; ++i) {
 		if (internalSoundChannels[i] != NULL) {
 			NucAudioChannel_dec(internalSoundChannels[i]);
 			internalSoundChannels[i] = NULL;
 		}
+		if (internalStreamChannels[i] != NULL) {
+			NucStreamChannel_dec(internalStreamChannels[i]);
+			internalStreamChannels[i] = NULL;
+		}
 	}
-
-	// dynamicCompressor(samples, sampleCache2);
 
 	for (int i = 0; i < samples; ++i) {
 		*(float *)&buffer->data[buffer->write_location] = maxf(minf(sampleCache2[i], 1.0f), -1.0f);
@@ -247,41 +356,11 @@ void Audio_init() {
 	kinc_mutex_init(&mutex);
 	allocateSampleCache(512);
 	memset(soundChannels, 0, sizeof(soundChannels));
+	memset(streamChannels, 0, sizeof(streamChannels));
 	memset(internalSoundChannels, 0, sizeof(internalSoundChannels));
+	memset(internalStreamChannels, 0, sizeof(internalStreamChannels));
 	kinc_a2_set_callback(mix);
 }
-
-/*static var compressedLast = false;
-
-static function dynamicCompressor(samples : Int, cache : kha.arrays.Float32Array) {
-    var sum = 0.0;
-    for (i in 0...samples) {
-        sum += cache[i];
-    }
-    sum /= samples;
-    if (sum > 0.9) {
-        compressedLast = true;
-        for (i in 0...samples) {
-            if (cache[i] > 0.9) {
-                cache[i] = 0.9 + (cache[i] - 0.9) * 0.2;
-            }
-        }
-    }
-    else if (compressedLast) {
-        compressedLast = false;
-        for (i in 0...samples) {
-            if (cache[i] > 0.9) {
-                cache[i] = 0.9 + (cache[i] - 0.9) * lerp(i, samples);
-            }
-        }
-    }
-}
-
-static inline function lerp(index : Int, samples : Int) {
-    final start = 0.2;
-    final end = 1.0;
-    return start + (index / samples) * (end - start);
-}*/
 
 bool Audio_play(struct NucAudioChannel *channel, bool loop) {
 	bool foundChannel = false;
@@ -307,6 +386,40 @@ bool Audio_play(struct NucAudioChannel *channel, bool loop) {
 				}
 				NucAudioChannel_inc(channel);
 				soundChannels[i] = channel;
+				foundChannel = true;
+				break;
+			}
+		}
+	}
+	kinc_mutex_unlock(&mutex);
+
+	return foundChannel;
+}
+
+bool Audio_stream(struct NucStreamChannel *channel, bool loop) {
+	bool foundChannel = false;
+
+	kinc_mutex_lock(&mutex);
+	channel->looping = loop;
+	for (int i = 0; i < CHANNEL_COUNT; ++i) {
+		if (streamChannels[i] == NULL || streamChannels[i]->paused || streamChannels[i]->stopped) {
+			if (streamChannels[i] != NULL) {
+				NucStreamChannel_dec(streamChannels[i]);
+			}
+			NucStreamChannel_inc(channel);
+			streamChannels[i] = channel;
+			foundChannel = true;
+			break;
+		}
+	}
+	if (!foundChannel) {
+		for (int i = 0; i < CHANNEL_COUNT; ++i) {
+			if (streamChannels[i] == NULL || streamChannels[i]->paused || streamChannels[i]->stopped || streamChannels[i]->volume == 0.0f) {
+				if (streamChannels[i] != NULL) {
+					NucStreamChannel_dec(streamChannels[i]);
+				}
+				NucStreamChannel_inc(channel);
+				streamChannels[i] = channel;
 				foundChannel = true;
 				break;
 			}
