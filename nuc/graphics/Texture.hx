@@ -3,7 +3,6 @@ package nuc.graphics;
 import haxe.io.Bytes;
 import nuc.resources.Resource;
 import nuc.Resources;
-import nuc.utils.IdGenerator;
 import nuc.utils.Log;
 
 typedef TextureFormat = kha.graphics4.TextureFormat;
@@ -14,16 +13,6 @@ typedef MipMapFilter = kha.graphics4.MipMapFilter;
 typedef TextureAddressing = kha.graphics4.TextureAddressing;
 
 class Texture extends Resource {
-
-	static public var maxTextures:Int = 4096; // TODO: remove? This is used by SparseSet in graphics
-	static var ids:IdGenerator = new IdGenerator();
-
-	static function getId():Int {
-		var id = ids.get();
-		Log.assert(id < maxTextures, 'Texture: Cant create more than ${maxTextures} textures');
-		return id;
-	}
-	static inline function putId(id:Int) ids.put(id);
 
 	static public var maxSize(get, never):Int;
 	static inline function get_maxSize() return kha.Image.maxSize;
@@ -71,8 +60,6 @@ class Texture extends Resource {
 	public var image:kha.Image;
 
 	public function new(image:kha.Image, renderTarget:Bool = false) {
-		// can be used for texture sorting, and packing to int
-		this.id = Texture.getId();
 		this.image = image;
 		isRenderTarget = renderTarget;
 		
@@ -96,21 +83,24 @@ class Texture extends Resource {
 	}
 
 	public function load(?onComplete:()->Void) {
-		kha.Assets.loadImageFromPath(
-			Nuc.resources.getResourcePath(name), 
-			false, 
-			function(img:kha.Image){
-				image = img;
-				if(onComplete != null) onComplete();
-			},
-			Nuc.resources.onError
-		);
+		if(image != null) {
+			if(onComplete != null) onComplete();
+		} else {
+			kha.Assets.loadImageFromPath(
+				Nuc.resources.getResourcePath(name), 
+				false, 
+				function(img:kha.Image){
+					image = img;
+					if(onComplete != null) onComplete();
+				},
+				Nuc.resources.onError
+			);
+		}
 	}
 
 	override function unload() {
 		image.unload();
 		image = null;
-		Texture.putId(id);
 	}
 
 	override function memoryUse() {

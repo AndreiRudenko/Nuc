@@ -20,9 +20,27 @@ class Font extends Resource {
 		resourceType = ResourceType.FONT;
 	}
 
+	public function load(?onComplete:()->Void) {
+		if(font != null) {
+			if(onComplete != null) onComplete();
+		} else {
+			kha.Assets.loadFontFromPath(
+				Nuc.resources.getResourcePath(name),
+				function(f:kha.Font){
+					font = f;
+					if(onComplete != null) onComplete();
+				},
+				Nuc.resources.onError
+			);
+		}
+	}
+
 	override function unload() {
 		font.unload();
 		font = null;
+		for (t in textures) {
+			Nuc.resources.remove(t);
+		}
 		textures = null;
 	}
 	

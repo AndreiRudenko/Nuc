@@ -61,6 +61,9 @@ class Audio {
 
 class Audio {
 
+	static public var samplesPerSecond(get, never):Int;
+	static inline function get_samplesPerSecond() return kha.audio2.Audio.samplesPerSecond;
+	
 	public function new() {}
 
 	public function play(sound:Sound, volume:Float = 1, pan:Float = 0, playbackRate:Float = 1, loop:Bool = false):nuc.audio.AudioChannel {

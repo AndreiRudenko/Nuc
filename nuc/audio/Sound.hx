@@ -34,12 +34,35 @@ class Sound extends Resource {
 		resourceType = ResourceType.SOUND;
 	}
 
-	public function load(?onComplete:()->Void, uncompress:Bool = true) {
+	public inline function uncompress(done:()->Void) {
+		sound.uncompress(done);
+	}
 
+	public function load(?onComplete:()->Void, uncompress:Bool = true) {
+		if(sound != null) {
+			if(onComplete != null) onComplete();
+		} else {
+			kha.Assets.loadSoundFromPath(
+				Nuc.resources.getResourcePath(name), 
+				function(snd:kha.Sound){
+					if(uncompress) {
+						snd.uncompress(function() {
+							sound = snd;
+							if(onComplete != null) onComplete();
+						});
+					} else {
+						sound = snd;
+						if(onComplete != null) onComplete();
+					}
+				},
+				Nuc.resources.onError
+			);
+		}
 	}
 
 	override function unload() {
 		sound.unload();
+		sound = null;
 	}
 
 	override function memoryUse() {

@@ -23,12 +23,23 @@ class BytesResource extends Resource {
 		resourceType = ResourceType.BYTES;
 	}
 
-	public function load() {
-
+	public function load(?onComplete:()->Void) {
+		if(blob != null) {
+			if(onComplete != null) onComplete();
+		} else {
+			kha.Assets.loadBlobFromPath(
+				Nuc.resources.getResourcePath(name),
+				function(b:kha.Blob){
+					blob = b;
+					if(onComplete != null) onComplete();
+				},
+				Nuc.resources.onError
+			);
+		}
 	}
-
 	override function unload() {
 		blob.unload();
+		blob = null;
 	}
 
 	override function memoryUse() {

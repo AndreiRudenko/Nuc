@@ -13,7 +13,6 @@ import nuc.graphics.utils.PolylineRenderer;
 @:allow(nuc.Graphics)
 class GraphicsState {
 
-	public var id(get, never):Int;
 	public var target(default, null):Texture;
 
 	public var pipeline(default, null):Pipeline;
@@ -70,10 +69,6 @@ class GraphicsState {
 		fontSize = 16;
 
 		useScissor = false;
-	}
-
-	function get_id() {
-		return target != null ? target.id : -1;
 	}
 	
 }
