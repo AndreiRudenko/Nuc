@@ -1,12 +1,5 @@
 package nuc.audio;
 
-import haxe.io.Bytes;
-import nuc.utils.Float32Array;
-import nuc.utils.Math;
-import nuc.resources.Resource;
-import nuc.Resources;
-
-
 interface AudioChannel {
 	public function play():Void;
 	public function pause():Void;

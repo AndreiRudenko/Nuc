@@ -10,7 +10,6 @@ import nuc.graphics.Video;
 import nuc.audio.Sound;
 
 import nuc.utils.Log;
-import nuc.utils.IdGenerator;
 
 import haxe.io.Path;
 
@@ -24,7 +23,6 @@ class Resources {
 	var _soundExt:Array<String>;
 	var _fontExt:Array<String>;
 	var _videoExt:Array<String>;
-	// var _ids:IdGenerator;
 
 	var _resourcesPath:String = '';
 
@@ -33,8 +31,6 @@ class Resources {
 		_soundExt = kha.Assets.soundFormats;
 		_videoExt = kha.Assets.videoFormats;
 		_fontExt = kha.Assets.fontFormats;
-
-		// _ids = new IdGenerator();
 
 		cache = new Map();
 		stats = new ResourceStats();
@@ -287,7 +283,6 @@ class Resources {
 	public function add(resource:Resource) {
 		Log.assert(!cache.exists(resource.name));
 
-		// resource.id = _ids.get();
 		cache.set(resource.name, resource);
 
 		updateStats(resource, 1);
@@ -297,7 +292,6 @@ class Resources {
 		Log.assert(cache.exists(resource.name));
 
 		updateStats(resource, -1);
-		// _ids.put(resource.id);
 		
 		return cache.remove(resource.name);
 	}

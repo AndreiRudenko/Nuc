@@ -3,7 +3,6 @@ package nuc;
 import kha.Framebuffer;
 import kha.Kravur;
 import kha.simd.Float32x4;
-// import kha.arrays.Int16Array;
 
 import nuc.Nuc;
 import nuc.Renderer;
@@ -34,7 +33,6 @@ import nuc.math.Rectangle;
 import nuc.utils.Math;
 import nuc.utils.Float32Array;
 import nuc.utils.Uint32Array;
-// import nuc.utils.Int16Array;
 import nuc.utils.DynamicPool;
 import nuc.utils.Log;
 import nuc.utils.Common.*;
@@ -371,7 +369,6 @@ class Graphics extends Batcher {
 	var _textureIdx:Int = 0;
 	var _textureFormat:TextureFormat = TextureFormat.RGBA32;
 
-	// var _textureIdSet:Int16Array;
 	var _lastTexture:Texture;
 	var _textures:haxe.ds.Vector<Texture>;
 	var _texturesCount:Int = 0;
@@ -411,10 +408,8 @@ class Graphics extends Batcher {
 		_transformPool = new DynamicPool<FastMatrix3>(16, function() { return new FastMatrix3(); });
 
 		_lastTexture = null;
-		// _textureIdSet = new Int16Array(Texture.maxTextures);
 		_textures = new haxe.ds.Vector(Graphics.maxShaderTextures);
 
-		// for (i in 0...Texture.maxTextures) _textureIdSet[i] = -1;
 		for (i in 0...Graphics.maxShaderTextures) _textures[i] = null;
 
 		_invertseTransform = new FastMatrix3();
@@ -1147,7 +1142,6 @@ class Graphics extends Batcher {
 
 			_textureIdx = _texturesCount;
 			_textures[_textureIdx] = texture;
-			// _textureIdSet[texture.id] = _textureIdx;
 
 			_lastTexture = texture;
 
@@ -1162,13 +1156,11 @@ class Graphics extends Batcher {
 			i++;
 		}
 		return -1;
-		// return _textureIdSet[texture.id];
 	}
 
 	function clearTextures() {
 		var i:Int = 0;
 		while(i < _texturesCount) {
-			// _textureIdSet[_textures[i].id] = -1;
 			_textures[i] = null;
 			i++;
 		}
