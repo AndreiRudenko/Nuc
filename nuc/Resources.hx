@@ -81,7 +81,7 @@ class Resources {
 
 		}
 
-		load(arr[i], cb);
+		load(arr[i], cb, uncompressSound);
 	}
 
 	public function unloadAll() {
