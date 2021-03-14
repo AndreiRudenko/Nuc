@@ -127,6 +127,8 @@ class Graphics extends Batcher {
 		clearDst:Bool = true, bilinear:Bool = true,
 		scaleX:FastFloat = 1, scaleY:FastFloat = 1, offsetX:FastFloat = 0, offsetY:FastFloat = 0
 	) {
+		Log.assert(Nuc.renderer.target != null, 'Graphics: has active render target, end before you blit');
+
 		var g:kha.graphics4.Graphics;
 		if(dst != null) {
 			Log.assert(dst.isRenderTarget, 'Graphics.blit with non renderTarget destination texture');
@@ -146,8 +148,6 @@ class Graphics extends Batcher {
 		if(pipeline == null) pipeline = Graphics.pipelineTextured;
 		
 		setBlitVertices(offsetX, offsetY, src.widthActual * scaleX, src.heightActual * scaleY);
-
-		// if(Nuc.renderer.target != null) Nuc.renderer.target.image.g4.end();
 
 		g.begin();
 		if(clearDst) g.clear(Color.BLACK);
@@ -169,8 +169,6 @@ class Graphics extends Batcher {
 
 		g.setTexture(textureUniform.location, null);
 		g.end();
-
-		// if(Nuc.renderer.target != null) Nuc.renderer.target.image.g4.begin();
 	}
 
 	@:allow(nuc.App)
