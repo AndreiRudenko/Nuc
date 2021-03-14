@@ -1,6 +1,5 @@
 package nuc.math;
 
-import nuc.math.Transform;
 import kha.math.FastMatrix3;
 import kha.FastFloat;
 

@@ -1,7 +1,5 @@
 package nuc.math;
 
-import nuc.math.Transform;
-
 /*
 | a | c | tx |
 | b | d | ty |
