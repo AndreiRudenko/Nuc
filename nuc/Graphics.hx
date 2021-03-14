@@ -127,7 +127,7 @@ class Graphics extends Batcher {
 		clearDst:Bool = true, bilinear:Bool = true,
 		scaleX:FastFloat = 1, scaleY:FastFloat = 1, offsetX:FastFloat = 0, offsetY:FastFloat = 0
 	) {
-		Log.assert(Nuc.renderer.target != null, 'Graphics: has active render target, end before you blit');
+		Log.assert(Nuc.renderer.target == null, 'Graphics: has active render target, end before you blit');
 
 		var g:kha.graphics4.Graphics;
 		if(dst != null) {
