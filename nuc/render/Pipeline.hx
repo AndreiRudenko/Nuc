@@ -17,7 +17,6 @@ import nuc.graphics.Video;
 import nuc.render.VertexBuffer;
 import nuc.render.VertexStructure;
 import nuc.render.Uniforms;
-import nuc.utils.IdGenerator;
 
 typedef BlendFactor = kha.graphics4.BlendingFactor;
 typedef BlendOperation = kha.graphics4.BlendingOperation;
@@ -25,9 +24,6 @@ typedef CompareMode = kha.graphics4.CompareMode;
 
 class Pipeline {
 
-	static var ids:IdGenerator = new IdGenerator();
-
-	public var id(default, null):Int;
 	public var uniforms(default, null):Uniforms;
 
 	public var inputLayout(get, never):Array<VertexStructure>;
@@ -70,8 +66,6 @@ class Pipeline {
 	var _textureParameters:TextureParameters;
 
 	public function new(inputLayout:Array<VertexStructure>, vertexShader:VertexShader, fragmentShader:FragmentShader) {
-		id = Pipeline.ids.get();
-
 		_pipeline = new PipelineState();
 		_textureParameters = new TextureParameters();
 
@@ -153,7 +147,6 @@ class Pipeline {
 		_pipeline.delete();
 		uniforms = null;
 		_pipeline = null;
-		Pipeline.ids.put(id);
 	}
 
 }
