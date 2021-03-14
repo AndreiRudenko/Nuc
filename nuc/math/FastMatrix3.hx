@@ -124,36 +124,6 @@ abstract FastMatrix3(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.math
 		return this;
 	}
 
-/*	public inline function rotateAround(radians:FastFloat, x:FastFloat, y:FastFloat):FastMatrix3 {
-		var sin:FastFloat = Math.sin(radians);
-		var cos:FastFloat = Math.cos(radians);
-
-		var a1:FastFloat = a;
-		var b1:FastFloat = b;
-		var c1:FastFloat = c;
-		var d1:FastFloat = d;
-
-		a = a1 * cos + c1 * sin;
-		b = b1 * cos + d1 * sin;
-		c = -a1 * sin + c1 * cos;
-		d = -b1 * sin + d1 * cos;
-
-		// tx = x - x * cos + y * sin + tx;
-		// ty = y - x * sin - y * cos + ty;
-
-		// tx += x;
-		// ty += y;
-		// tx = a * x + c * y + tx;
-		// ty = b * x + d * y + ty;
-
-		tx += x;
-		ty += y;
-		tx = a * -x + c * -y + tx;
-		ty = b * -x + d * -y + ty;
-
-		return this;
-	}*/
-
 	public inline function append(m:FastMatrix3):FastMatrix3 {
         var a1:FastFloat = a;
         var b1:FastFloat = b;
@@ -235,25 +205,6 @@ abstract FastMatrix3(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.math
 		return new FastMatrix3(a, b, c, d, tx, ty);
 	}
 
-	public inline function decompose(into:Spatial) {
-		var determ:FastFloat = a * d - b * c;
-
-		into.pos.set(tx, ty);
-
-		if(a != 0 || b != 0) {
-			var r:FastFloat = Math.sqrt(a * a + b * b);
-			into.rotation = (b > 0) ? Math.acos(a / r) : -Math.acos(a / r);
-			into.scale.set(r, determ / r);
-		} else if(c != 0 || d != 0) {
-			var s:FastFloat = Math.sqrt(c * c + d * d);
-			into.rotation = Math.PI * 0.5 - (d > 0 ? Math.acos(-c / s) : -Math.acos(c / s));
-			into.scale.set(determ / s, s);
-		} else {
-			into.rotation = 0;
-			into.scale.set(0,0);
-		}
-	}
-
 	public inline function fromMatrix(m:Matrix):FastMatrix3 {
 		set(m.a, m.b, m.c, m.d, m.tx, m.ty);
 
@@ -272,8 +223,8 @@ abstract FastMatrix3(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.math
 		var sin:FastFloat = Math.sin(angle);
 		var cos:FastFloat = Math.cos(angle);
 
-		a = cos * sx - ky * sin * sy;
-		b = sin * sx + ky * cos * sy;
+		a = sx * cos - ky * sin * sy;
+		b = sx * sin + ky * cos * sy;
 		c = kx * cos * sx - sin * sy;
 		d = kx * sin * sx + cos * sy;
 		tx = x - ox * a - oy * c;

@@ -59,8 +59,10 @@ class Matrix {
 	public inline function scale(x:Float, y:Float):Matrix {
 		a *= x;
 		b *= x;
+		tx *= x;
 		c *= y;
 		d *= y;
+		ty *= y;
 
 		return this;
 	}
@@ -94,10 +96,10 @@ class Matrix {
 		var c1:Float = c;
 		var d1:Float = d;
 
-		a = a1 *  cos + b1 * sin;
-		b = a1 * -sin + b1 * cos;
-		c = c1 *  cos + d1 * sin;
-		d = c1 * -sin + d1 * cos;
+		a = a1 * cos + c1 * sin;
+		b = b1 * cos + d1 * sin;
+		c = -a1 * sin + c1 * cos;
+		d = -b1 * sin + d1 * cos;
 
 		return this;
 	}
@@ -183,24 +185,6 @@ class Matrix {
 		return new Matrix(a, b, c, d, tx, ty);
 	}
 
-	// public inline function decompose(into:Spatial) {
-	// 	var determ = a * d - b * c;
-
-	// 	into.pos.set(tx, ty);
-
-	// 	if(a != 0 || b != 0) {
-	// 		var r = Math.sqrt(a * a + b * b);
-	// 		into.rotation = (b > 0) ? Math.acos(a / r) : -Math.acos(a / r);
-	// 		into.scale.set(r, determ / r);
-	// 	} else if(c != 0 || d != 0) {
-	// 		var s = Math.sqrt(c * c + d * d);
-	// 		into.rotation = Math.PI * 0.5 - (d > 0 ? Math.acos(-c / s) : -Math.acos(c / s));
-	// 		into.scale.set(determ / s, s);
-	// 	} else {
-	// 		into.rotation = 0;
-	// 		into.scale.set(0,0);
-	// 	}
-	// }
 	public inline function fromFastMatrix3(m:FastMatrix3):Matrix {
 		set(m.a, m.b, m.c, m.d, m.tx, m.ty);
 		return this;
