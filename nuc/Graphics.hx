@@ -18,7 +18,6 @@ import nuc.graphics.Texture;
 import nuc.graphics.Font;
 import nuc.graphics.Video;
 import nuc.graphics.Color;
-import nuc.graphics.Mesh;
 import nuc.graphics.utils.PolylineRenderer;
 import nuc.graphics.utils.ShapeRenderer;
 import nuc.graphics.utils.GraphicsState;
