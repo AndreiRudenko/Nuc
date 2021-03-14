@@ -148,6 +148,9 @@ class StreamChannel implements nuc.audio.AudioChannel {
 
 #else
 
+import kha.audio2.ogg.vorbis.Reader;
+
+@:allow(nuc.Audio)
 class StreamChannel implements nuc.audio.AudioChannel {
 
 	public var volume(get, set):Float;
@@ -170,10 +173,20 @@ class StreamChannel implements nuc.audio.AudioChannel {
 	}
 
 	public var position(get, set):Float;
-	var _position:Float = 0;
-	inline function get_position() return _position;
+	inline function get_position() {
+		#if (kha_no_ogg)
+		return 0.0;
+		#else
+		return reader.currentMillisecond / 1000.0;
+		#end
+	}
 	function set_position(v:Float) {
-		return _position = v;
+		#if (kha_no_ogg)
+		return 0.0;
+		#else
+		reader.currentMillisecond = v * 1000;
+		return v;
+		#end
 	}
 
 	public var playbackRate(get, set):Float;
@@ -187,9 +200,19 @@ class StreamChannel implements nuc.audio.AudioChannel {
 	function get_finished() return stopped;
 
 	public var length(get, never):Float;
-	function get_length() return data.length / Audio.samplesPerSecond / 2; // 44.1 khz in stereo
+	function get_length() {
+		#if (kha_no_ogg)
+		return 0.0;
+		#else
+		return reader.totalMillisecond / 1000.0;
+		#end
+	}
 
-	var data:Float32Array = null;
+	#if (!kha_no_ogg)
+	var reader:Reader;
+	#end
+
+	var data:Bytes = null;
 
 	var l:Float = 0.7071;
 	var r:Float = 0.7071;
@@ -198,14 +221,18 @@ class StreamChannel implements nuc.audio.AudioChannel {
 	var stopped:Bool = false;
 	var looping:Bool = false;
 
-	public function new() {
-
+	public function new(data:Bytes, loop:Bool) {
+		this.data = data;
+		looping = loop;
+		#if (!kha_no_ogg)
+		reader = Reader.openFromBytes(data);
+		#end
 	}
 
 	public function play() {
 		paused = false;
 		stopped = false;
-		// Nuc.audio.streamAgain(this);
+		Nuc.audio.streamAgain(this);
 	}
 
 	public function pause() {
@@ -214,6 +241,31 @@ class StreamChannel implements nuc.audio.AudioChannel {
 
 	public function stop() {
 		stopped = true;
+		reader.currentMillisecond = 0;
+	}
+
+	function nextSamples(requestedSamples:Float32Array, requestedLength:Int, sampleRate:Int) {
+		// if (paused || stopped) {
+		// 	for (i in 0...requestedLength) {
+		// 		requestedSamples[i] = 0;
+		// 	}
+		// 	return;
+		// }
+
+		#if (!kha_no_ogg)
+		var count = reader.read(requestedSamples, Std.int(requestedLength / 2), 2, sampleRate, true) * 2;
+		if (count < requestedLength) {
+			if (looping) {
+				reader.currentMillisecond = 0;
+			} else {
+				stop();
+			}
+
+			for (i in count...requestedLength) {
+				requestedSamples[i] = 0;
+			}
+		}
+		#end
 	}
 
 	function calcVolume() {

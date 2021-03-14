@@ -93,6 +93,7 @@ void NucAudioChannel_nextSamples(struct NucAudioChannel *channel, float *request
 	const int start_position = channel->position;
 	int position = start_position;
 
+	//TODO: do we need this?
 	if (channel->paused || channel->stopped) {
 		for (int i = 0; i < requestedLength; ++i) {
 			requestedSamples[i] = 0;

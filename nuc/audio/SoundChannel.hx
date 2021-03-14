@@ -142,6 +142,7 @@ class SoundChannel implements nuc.audio.AudioChannel {
 
 #else
 
+@:allow(nuc.Audio)
 class SoundChannel implements AudioChannel {
 
 	public var volume(get, set):Float;
@@ -164,10 +165,13 @@ class SoundChannel implements AudioChannel {
 	}
 
 	public var position(get, set):Float;
-	var _position:Float = 0;
-	inline function get_position() return _position;
+	var _position:Int = 0;
+	inline function get_position() return _position / Audio.samplesPerSecond / 2;
 	function set_position(v:Float) {
-		return _position = v;
+		var pos = Math.round(v * Audio.samplesPerSecond * 2.0);
+		pos = pos % 2 == 0 ? pos : pos + 1;
+		_position = Math.imax(Math.imin(pos, sampleLength(Audio.samplesPerSecond)), 0);
+		return v;
 	}
 
 	public var playbackRate(get, set):Float;
@@ -192,14 +196,18 @@ class SoundChannel implements AudioChannel {
 	var stopped:Bool = false;
 	var looping:Bool = false;
 
-	public function new() {
+	var sampleRate:Int;
 
+	public function new(data:Float32Array, sampleRate:Int, loop:Bool) {
+		this.data = data;
+		this.sampleRate = sampleRate;
+		looping = loop;
 	}
 
 	public function play() {
 		paused = false;
 		stopped = false;
-		// Nuc.audio.playAgain(this);
+		Nuc.audio.playAgain(this);
 	}
 
 	public function pause() {
@@ -207,7 +215,84 @@ class SoundChannel implements AudioChannel {
 	}
 
 	public function stop() {
+		_position = 0;
 		stopped = true;
+	}
+
+	function nextSamples(requestedSamples:Float32Array, requestedLength:Int, sampleRate:Int) {
+		//TODO: do we need this?
+		if (paused || stopped) {
+			for (i in 0...requestedLength) {
+				requestedSamples[i] = 0;
+			}
+			return;
+		}
+
+		var requestedSamplesIndex = 0;
+		while (requestedSamplesIndex < requestedLength) {
+			for (i in 0...Math.imin(sampleLength(sampleRate) - _position, requestedLength - requestedSamplesIndex)) {
+				requestedSamples[requestedSamplesIndex++] = sample(_position++, sampleRate);
+			}
+
+			if (_position >= sampleLength(sampleRate)) {
+				_position = 0;
+				if (!looping) {
+					stopped = true;
+					break;
+				}
+			}
+		}
+
+		while (requestedSamplesIndex < requestedLength) {
+			requestedSamples[requestedSamplesIndex++] = 0;
+		}
+	}
+
+	inline function sample(position:Int, sampleRate:Int): Float {
+		var even = position % 2 == 0;
+		var factor = this.sampleRate / sampleRate * _playbackRate;
+
+		if (even) {
+			position = Std.int(position / 2);
+			var pos = factor * position;
+			var pos1 = Math.floor(pos);
+			var pos2 = Math.floor(pos + 1);
+			pos1 *= 2;
+			pos2 *= 2;
+
+			var minimum = 0;
+			var maximum = data.length - 1;
+			maximum = maximum % 2 == 0 ? maximum : maximum - 1;
+
+			var a = (pos1 < minimum || pos1 > maximum) ? 0 : data[pos1];
+			var b = (pos2 < minimum || pos2 > maximum) ? 0 : data[pos2];
+			return lerp(a, b, pos - Math.floor(pos));
+		}
+		else {
+			position = Std.int(position / 2);
+			var pos = factor * position;
+			var pos1 = Math.floor(pos);
+			var pos2 = Math.floor(pos + 1);
+			pos1 = pos1 * 2 + 1;
+			pos2 = pos2 * 2 + 1;
+
+			var minimum = 1;
+			var maximum = data.length - 1;
+			maximum = maximum % 2 != 0 ? maximum : maximum - 1;
+
+			var a = (pos1 < minimum || pos1 > maximum) ? 0 : data[pos1];
+			var b = (pos2 < minimum || pos2 > maximum) ? 0 : data[pos2];
+			return lerp(a, b, pos - Math.floor(pos));
+		}
+	}
+
+	inline function lerp(v0: Float, v1: Float, t: Float) {
+		return (1 - t) * v0 + t * v1;
+	}
+
+	inline function sampleLength(sampleRate: Int): Int {
+		var value = Math.ceil(data.length * (sampleRate / this.sampleRate));
+		return value % 2 == 0 ? value : value + 1;
 	}
 
 	function calcVolume() {
