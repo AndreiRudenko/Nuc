@@ -19,7 +19,6 @@ class GraphicsState {
 	public var viewport(default, null):Rectangle;
 	public var projection(default, null):FastMatrix3;
 	public var transform(default, null):FastMatrix3;
-	public var view(default, null):FastMatrix3;
 	public var scissor(default, null):Rectangle;
 	public var color(default, null):Color;
 	public var opacity(default, null):Float;
@@ -37,7 +36,6 @@ class GraphicsState {
 	public var useScissor(default, null):Bool = false;
 
 	public function new() {
-		view = new FastMatrix3();
 		transform = new FastMatrix3();
 		scissor = new Rectangle();
 		color = new Color();

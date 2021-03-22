@@ -231,14 +231,6 @@ class Graphics extends Batcher {
 		return _pipeline = v;
 	}
 
-	public var view(get, set):FastMatrix3;
-	var _view:FastMatrix3;
-	inline function get_view() return _view; 
-	function set_view(v:FastMatrix3):FastMatrix3 {
-		if(isDrawing) flush();
-		return _view.copyFrom(v);
-	}
-
 	public var transform(get, set):FastMatrix3;
 	var _transform:FastMatrix3;
 	inline function get_transform() return _transform; 
@@ -392,7 +384,6 @@ class Graphics extends Batcher {
 
 		_transform = new FastMatrix3();
 		_projection = new FastMatrix3();
-		_view = new FastMatrix3();
 		_combined = new FastMatrix3();
 
 		setProjection(Nuc.window.width, Nuc.window.height);
@@ -465,8 +456,7 @@ class Graphics extends Batcher {
 
 		if(_scissor != null) _renderer.scissor(_scissor.x, _scissor.y, _scissor.w, _scissor.h);
 
-		_combined.copyFrom(_projection).append(_view);
-		_pipeline.setMatrix3('projectionMatrix', _combined);
+		_pipeline.setMatrix3('projectionMatrix', _projection);
 
 		var i:Int = 0;
 		while(i < _texturesCount) {
@@ -500,7 +490,6 @@ class Graphics extends Batcher {
 		_savedState.target = target;
 		_savedState.pipeline = _pipeline;
 		_savedState.transform.copyFrom(_transform);
-		_savedState.view.copyFrom(_view);
 
 		_savedState.color = _color;
 		_savedState.opacity = _opacity;
@@ -534,7 +523,6 @@ class Graphics extends Batcher {
 	public function restore() {		
 		_pipeline = _savedState.pipeline;
 		_transform.copyFrom(_savedState.transform);
-		_view.copyFrom(_savedState.view);
 
 		_color = _savedState.color;
 		_opacity = _savedState.opacity;
