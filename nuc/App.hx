@@ -171,6 +171,7 @@ class App {
 		
 		input = new Input();
 		window = new Window(0, _options.antialiasing);
+		cursor = new Cursor();
 		
 		Graphics.setup();
 		graphics = new Graphics(renderer, _options.graphics);
