@@ -213,10 +213,10 @@ class Resources {
 
 		Log.debug('font / loading / $name');
 
-		kha.Assets.loadFontFromPath(
+		kha.Assets.loadBlobFromPath(
 			getResourcePath(name), 
-			function(f:kha.Font){
-				res = new Font(f);
+			function(blob:kha.Blob){
+				res = new Font(blob);
 				res.name = name;
 				add(res);
 				if(onComplete != null) onComplete(res);

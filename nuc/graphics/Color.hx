@@ -52,7 +52,7 @@ abstract Color(Int) from kha.Color to kha.Color from Int to Int {
 	}
 
 	public inline function setBytes(rB:Int, gB:Int, bB:Int, aB:Int):Color {
-		this = (aB << 24) | (rB << 16) | (gB << 8) | bB;		
+		this = (aB << 24) | (rB << 16) | (gB << 8) | bB;
 		return this;
 	}
 

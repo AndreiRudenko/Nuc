@@ -1,7 +1,6 @@
 package nuc;
 
 import kha.Framebuffer;
-import kha.Kravur;
 import kha.simd.Float32x4;
 
 import nuc.Nuc;
@@ -362,7 +361,7 @@ class Graphics extends Batcher {
 	var _textures:haxe.ds.Vector<Texture>;
 	var _texturesCount:Int = 0;
 	
-	var _bakedQuadCache:AlignedQuad;
+	var _bakedQuadCache:CQuad;
 	var _polylineRenderer:PolylineRenderer;
 	var _shapeRenderer:ShapeRenderer;
 
@@ -401,7 +400,7 @@ class Graphics extends Batcher {
 		for (i in 0...Graphics.maxShaderTextures) _textures[i] = null;
 
 		_invertseTransform = new FastMatrix3();
-		_bakedQuadCache = new AlignedQuad();
+		_bakedQuadCache = new CQuad();
 
 		_savedState = new GraphicsState();
 		_wasSaved = false;
@@ -717,14 +716,14 @@ class Graphics extends Batcher {
 		if(text.length == 0) return;
 
 		final texture = _font.getTexture(fontSize);
-		final kravur = @:privateAccess _font.font._get(fontSize);
+		final fontImage = font.getFontImage(fontSize);
 
 		final texRatioW:FastFloat = texture.width / texture.widthActual;
 		final texRatioH:FastFloat = texture.height / texture.heightActual;
 
 		var linePos:FastFloat = 0;
 		var charIndex:Int = 0;
-		var charQuad:AlignedQuad;
+		var charQuad:CQuad;
 
 		var x0:FastFloat;
 		var y0:FastFloat;
@@ -739,7 +738,7 @@ class Graphics extends Batcher {
 		var i:Int = 0;
 		while(i < text.length) {
 			charIndex = findCharIndex(text.fastCodeAt(i));
-			charQuad = kravur.getBakedQuad(_bakedQuadCache, charIndex, linePos, 0);
+			charQuad = fontImage.getBakedQuad(_bakedQuadCache, charIndex, linePos, 0);
 			if (charQuad != null) {
 				if(charIndex > 0) { // skip space
 
@@ -1077,7 +1076,7 @@ class Graphics extends Batcher {
 	}
 
 	function setProjection(width:Float, height:Float) {
-		if (Texture.renderTargetsInvertedY) {
+		if(Texture.renderTargetsInvertedY) {
 			_projection.orto(0, width, 0, height);
 		} else {
 			_projection.orto(0, width, height, 0);
@@ -1085,7 +1084,7 @@ class Graphics extends Batcher {
 	}
 
 	inline function findCharIndex(charCode:Int):Int {
-		var blocks = KravurImage.charBlocks;
+		var blocks = FontImage.charBlocks;
 		var offset = 0;
 		var start = 0;
 		var end = 0;
