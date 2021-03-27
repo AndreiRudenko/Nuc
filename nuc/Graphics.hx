@@ -47,14 +47,12 @@ class Graphics extends Batcher {
 	// TODO: hardcoded for now, get from project settings
 	static public var maxShaderTextures:Int = 8;
 
-	static public inline var vertexSizeMultiTextured:Int = 10;
-	static public inline var vertexSizeTexturedF:Int = 9;
+	static public inline var vertexSizeMultiTextured:Int = 9;
 	static public inline var vertexSizeTextured:Int = 8;
 	static public inline var vertexSizeColored:Int = 6;
 
 	static public var pipelineColored:Pipeline;
 	static public var pipelineTextured:Pipeline;
-	static public var pipelineTexturedF:Pipeline;
 	static public var pipelineMultiTextured:Pipeline;
 
 	static var frameBuffer:Framebuffer;
@@ -84,24 +82,12 @@ class Graphics extends Batcher {
 		pipelineTextured.setBlending(BlendFactor.BlendOne, BlendFactor.InverseSourceAlpha, BlendOperation.Add);
 		pipelineTextured.compile();
 
-		// textured use format, for text and image drawing
-		structure = new VertexStructure();
-		structure.add("position", VertexData.Float2);
-		structure.add("color", VertexData.Float4);
-		structure.add("texCoord", VertexData.Float2);
-		structure.add("texFormat", VertexData.Float1);
-
-		pipelineTexturedF = new Pipeline([structure], Shaders.texturedf_vert, Shaders.texturedf_frag);
-		pipelineTexturedF.setBlending(BlendFactor.BlendOne, BlendFactor.InverseSourceAlpha, BlendOperation.Add);
-		pipelineTexturedF.compile();
-
 		// multi texture
 		structure = new VertexStructure();
 		structure.add("position", VertexData.Float2);
 		structure.add("color", VertexData.Float4);
 		structure.add("texCoord", VertexData.Float2);
 		structure.add("texId", VertexData.Float1);
-		structure.add("texFormat", VertexData.Float1);
 		
 		pipelineMultiTextured = new Pipeline([structure], Shaders.multitextured_vert, Shaders.multitextured8_frag);
 
@@ -355,7 +341,6 @@ class Graphics extends Batcher {
 
 	var _inGeometryMode:Bool = false;
 	var _textureIdx:Int = 0;
-	var _textureFormat:TextureFormat = TextureFormat.RGBA32;
 
 	var _lastTexture:Texture;
 	var _textures:haxe.ds.Vector<Texture>;
@@ -715,8 +700,8 @@ class Graphics extends Batcher {
 	public function drawString(text:String, x:FastFloat, y:FastFloat, spacing:Int = 0) {
 		if(text.length == 0) return;
 
-		final texture = _font.getTexture(fontSize);
 		final fontImage = font.getFontImage(fontSize);
+		final texture = fontImage.texture;
 
 		final texRatioW:FastFloat = texture.width / texture.widthActual;
 		final texRatioH:FastFloat = texture.height / texture.heightActual;
@@ -741,7 +726,6 @@ class Graphics extends Batcher {
 			charQuad = fontImage.getBakedQuad(_bakedQuadCache, charIndex, linePos, 0);
 			if (charQuad != null) {
 				if(charIndex > 0) { // skip space
-
 					x0 = charQuad.x0;
 					y0 = charQuad.y0;
 					x1 = charQuad.x1;
@@ -758,7 +742,7 @@ class Graphics extends Batcher {
 						x+x0, y+y0, 
 						x1-x0, y1-y0, 
 						Color.WHITE, 
-						left, top,
+						left, top, 
 						right-left, bottom-top
 					);
 
@@ -918,17 +902,17 @@ class Graphics extends Batcher {
 		final p3x = Float32x4.getFast(simdX, 3);
 		final p3y = Float32x4.getFast(simdY, 3);
 
-		_vertices[n + 0] = p0x; 
-		_vertices[n + 1] = p0y; 
+		_vertices[n + 0] = p0x;
+		_vertices[n + 1] = p0y;
 
-		_vertices[n + 10] = p1x; 
-		_vertices[n + 11] = p1y; 
+		_vertices[n + 9] = p1x;
+		_vertices[n + 10] = p1y;
 
-		_vertices[n + 20] = p2x; 
-		_vertices[n + 21] = p2y; 
+		_vertices[n + 18] = p2x;
+		_vertices[n + 19] = p2y;
 
-		_vertices[n + 30] = p3x; 
-		_vertices[n + 31] = p3y; 
+		_vertices[n + 27] = p3x;
+		_vertices[n + 28] = p3y; 
 
 		final ca = Float32x4.loadFast(c.rB, c.gB, c.bB, c.aB);
 		final cb = Float32x4.loadFast(_color.rB, _color.gB, _color.bB, _color.aB);
@@ -956,17 +940,17 @@ class Graphics extends Batcher {
 		final p3x = t.getTransformX(x, yh);
 		final p3y = t.getTransformY(x, yh);
 
-		_vertices[n + 0] = p0x; 
-		_vertices[n + 1] = p0y; 
+		_vertices[n + 0] = p0x;
+		_vertices[n + 1] = p0y;
 
-		_vertices[n + 10] = p1x; 
-		_vertices[n + 11] = p1y; 
+		_vertices[n + 9] = p1x;
+		_vertices[n + 10] = p1y;
 
-		_vertices[n + 20] = p2x; 
-		_vertices[n + 21] = p2y; 
+		_vertices[n + 18] = p2x;
+		_vertices[n + 19] = p2y;
 
-		_vertices[n + 30] = p3x; 
-		_vertices[n + 31] = p3y; 
+		_vertices[n + 27] = p3x;
+		_vertices[n + 28] = p3y;
 
 		c.multiply(_color);
 
@@ -982,20 +966,20 @@ class Graphics extends Batcher {
 		_vertices[n + 4] = b;
 		_vertices[n + 5] = a;
 
-		_vertices[n + 12] = r;
-		_vertices[n + 13] = g;
-		_vertices[n + 14] = b;
-		_vertices[n + 15] = a;
+		_vertices[n + 11] = r;
+		_vertices[n + 12] = g;
+		_vertices[n + 13] = b;
+		_vertices[n + 14] = a;
 
-		_vertices[n + 22] = r;
-		_vertices[n + 23] = g;
-		_vertices[n + 24] = b;
-		_vertices[n + 25] = a;
+		_vertices[n + 20] = r;
+		_vertices[n + 21] = g;
+		_vertices[n + 22] = b;
+		_vertices[n + 23] = a;
 
-		_vertices[n + 32] = r;
-		_vertices[n + 33] = g;
-		_vertices[n + 34] = b;
-		_vertices[n + 35] = a;
+		_vertices[n + 29] = r;
+		_vertices[n + 30] = g;
+		_vertices[n + 31] = b;
+		_vertices[n + 32] = a;
 
 		final rxw:FastFloat = rx + rw;
 		final ryh:FastFloat = ry + rh;
@@ -1003,27 +987,19 @@ class Graphics extends Batcher {
 		_vertices[n + 6] = rx;
 		_vertices[n + 7] = ry;
 
-		_vertices[n + 16] = rxw;
-		_vertices[n + 17] = ry;
+		_vertices[n + 15] = rxw;
+		_vertices[n + 16] = ry;
 
-		_vertices[n + 26] = rxw;
-		_vertices[n + 27] = ryh;
+		_vertices[n + 24] = rxw;
+		_vertices[n + 25] = ryh;
 
-		_vertices[n + 36] = rx;
-		_vertices[n + 37] = ryh;
-
+		_vertices[n + 33] = rx;
+		_vertices[n + 34] = ryh;
 
 		_vertices[n + 8] = _textureIdx;
-		_vertices[n + 9] = _textureFormat;
-
-		_vertices[n + 18] = _textureIdx;
-		_vertices[n + 19] = _textureFormat;
-
-		_vertices[n + 28] = _textureIdx;
-		_vertices[n + 29] = _textureFormat;
-
-		_vertices[n + 38] = _textureIdx;
-		_vertices[n + 39] = _textureFormat;
+		_vertices[n + 17] = _textureIdx;
+		_vertices[n + 26] = _textureIdx;
+		_vertices[n + 35] = _textureIdx;
 
 		_vertPos+=4;
 
@@ -1055,7 +1031,6 @@ class Graphics extends Batcher {
 		_vertices[_vertexIdx + 7] = v;
 
 		_vertices[_vertexIdx + 8] = _textureIdx;
-		_vertices[_vertexIdx + 9] = _textureFormat;
 
 		_vertPos++;
 	}
@@ -1118,7 +1093,6 @@ class Graphics extends Batcher {
 
 	function setTexture(texture:Texture) {
 		_textureIdx = getTextureIdx(texture);
-		_textureFormat = texture.format;
 
 		if(_textureIdx < 0) {
 			if(_texturesCount >= Graphics.maxShaderTextures) {
