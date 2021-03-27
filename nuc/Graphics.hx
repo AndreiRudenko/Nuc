@@ -688,8 +688,11 @@ class Graphics extends Batcher {
 	public function drawImage(texture:Texture, x:FastFloat = 0, y:FastFloat = 0, ?w:FastFloat, ?h:FastFloat, rx:FastFloat = 0, ry:FastFloat = 0, ?rw:FastFloat, ?rh:FastFloat) {
 		if(texture == null) texture = Graphics.textureDefault;
 
-		final texWidth = texture.widthActual;
-		final texHeight = texture.heightActual;
+		final texRatioW:FastFloat = texture.width / texture.widthActual;
+		final texRatioH:FastFloat = texture.height / texture.heightActual;
+
+		final texWidth:FastFloat = texture.widthActual * texRatioW;
+		final texHeight:FastFloat = texture.heightActual * texRatioH;
 
 		if(w == null) w = texWidth;
 		if(h == null) h = texHeight;
@@ -704,7 +707,7 @@ class Graphics extends Batcher {
 			w, h, 
 			Color.WHITE, 
 			rx/texWidth, ry/texHeight,
-			rh/texWidth, rw/texHeight
+			rw/texWidth, rh/texHeight
 		);
 
 		endGeometry();
@@ -716,9 +719,8 @@ class Graphics extends Batcher {
 		final texture = _font.getTexture(fontSize);
 		final kravur = @:privateAccess _font.font._get(fontSize);
 
-		final image = texture.image;
-		final texRatioX:FastFloat = image.width / image.realWidth;
-		final texRatioY:FastFloat = image.height / image.realHeight;
+		final texRatioW:FastFloat = texture.width / texture.widthActual;
+		final texRatioH:FastFloat = texture.height / texture.heightActual;
 
 		var linePos:FastFloat = 0;
 		var charIndex:Int = 0;
@@ -746,10 +748,10 @@ class Graphics extends Batcher {
 					x1 = charQuad.x1;
 					y1 = charQuad.y1;
 
-					left = charQuad.s0 * texRatioX;
-					top = charQuad.t0 * texRatioY;
-					right = charQuad.s1 * texRatioX;
-					bottom = charQuad.t1 * texRatioY;
+					left = charQuad.s0 * texRatioW;
+					top = charQuad.t0 * texRatioH;
+					right = charQuad.s1 * texRatioW;
+					bottom = charQuad.t1 * texRatioH;
 
 					beginGeometry(texture, 4, 6);
 
