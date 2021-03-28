@@ -211,7 +211,6 @@ class Graphics extends Batcher {
 	var _pipeline:Pipeline;
 	inline function get_pipeline() return _pipeline; 
 	function set_pipeline(v:Pipeline):Pipeline {
-		if(v == null) v = _pipelineDefault;
 		if(isDrawing && _pipeline != v) flush();
 		return _pipeline = v;
 	}
@@ -302,6 +301,24 @@ class Graphics extends Batcher {
 		return miterMinAngle;
 	}
 
+	public var multitexture(get, set):Bool;
+	var _multitexture:Bool = true;
+	inline function get_multitexture() return _multitexture; 
+	function set_multitexture(v:Bool):Bool {
+		if(_multitexture != v) {
+			if(isDrawing) flush();
+			if(v) {
+				_vertexSize = Graphics.vertexSizeMultiTextured;
+				_vertexBuffer = _vertexBufferMultiTextured;
+			} else {
+				_vertexSize = Graphics.vertexSizeTextured;
+				_vertexBuffer = _vertexBufferTextured;
+			}
+			_vertices = _vertexBuffer.lock();
+		}
+		return _multitexture = v;
+	}
+
 	var _miterMinAngleRadians:Float = 10/180;
 
 	var _renderer:Renderer;
@@ -321,7 +338,11 @@ class Graphics extends Batcher {
 	var _invertseTransform:FastMatrix3;
 	var _invertseTransformDirty:Bool = true;
 
-	var _pipelineDefault:Pipeline;
+	var _pipelineTextured:Pipeline;
+	var _pipelineMultiTextured:Pipeline;
+
+	var _vertexBufferMultiTextured:VertexBuffer;
+	var _vertexBufferTextured:VertexBuffer;
 
 	var _vertexBuffer:VertexBuffer;
 	var _indexBuffer:IndexBuffer;
@@ -335,9 +356,10 @@ class Graphics extends Batcher {
 	var _indicesDraw:Int = 0;
 
 	var _vertStartPos:Int = 0;
-	var _vertexIdx:Int = 0;
+	var _bufferIdx:Int = 0;
 	var _vertPos:Int = 0;
 	var _indPos:Int = 0;
+	var _vertexSize:Int = 0;
 
 	var _inGeometryMode:Bool = false;
 	var _textureIdx:Int = 0;
@@ -358,11 +380,16 @@ class Graphics extends Batcher {
 		_verticesMax = def(options.batchVertices, 8192);
 		_indicesMax = def(options.batchIndices, 16384);
 
-		_pipeline = Graphics.pipelineMultiTextured;
-		_pipelineDefault = _pipeline;
+		_pipelineTextured = Graphics.pipelineTextured;
+		_pipelineMultiTextured = Graphics.pipelineMultiTextured;
 
-		_vertexBuffer = new VertexBuffer(_verticesMax, _pipelineDefault.inputLayout[0], Usage.DynamicUsage);
+		_vertexBufferTextured = new VertexBuffer(_verticesMax, _pipelineTextured.inputLayout[0], Usage.DynamicUsage);
+		_vertexBufferMultiTextured = new VertexBuffer(_verticesMax, _pipelineMultiTextured.inputLayout[0], Usage.DynamicUsage);
+
+		_vertexBuffer = _vertexBufferMultiTextured;
 		_vertices = _vertexBuffer.lock();
+		_vertexSize = Graphics.vertexSizeMultiTextured;
+
 		_indexBuffer = new IndexBuffer(_indicesMax, Usage.DynamicUsage);
 		_indices = _indexBuffer.lock();
 
@@ -390,6 +417,7 @@ class Graphics extends Batcher {
 		_savedState = new GraphicsState();
 		_wasSaved = false;
 
+
 		stats = new DrawStats();
 	}
 
@@ -398,7 +426,7 @@ class Graphics extends Batcher {
 	function dispose() {
 		_renderer = null;
 		_pipeline = null;
-		_pipelineDefault = null;
+		_pipelineTextured = null;
 
 		_vertexBuffer.delete();
 		_indexBuffer.delete();
@@ -440,17 +468,24 @@ class Graphics extends Batcher {
 
 		if(_scissor != null) _renderer.scissor(_scissor.x, _scissor.y, _scissor.w, _scissor.h);
 
-		_pipeline.setMatrix3('projectionMatrix', _projection);
+		var pipeline = _pipeline != null ? _pipeline : getDefaultPipeline();
 
-		var i:Int = 0;
-		while(i < _texturesCount) {
-			_pipeline.setTexture('tex[$i]', _textures[i]);
-			_pipeline.setTextureParameters('tex[$i]', _textureAddressing, _textureAddressing, _textureFilter, _textureFilter, _textureMipFilter);
-			i++;
+		pipeline.setMatrix3('projectionMatrix', _projection);
+
+		if(_multitexture) {
+			var i:Int = 0;
+			while(i < _texturesCount) {
+				pipeline.setTexture('tex[$i]', _textures[i]);
+				pipeline.setTextureParameters('tex[$i]', _textureAddressing, _textureAddressing, _textureFilter, _textureFilter, _textureMipFilter);
+				i++;
+			}
+		} else {
+			pipeline.setTexture('tex', _lastTexture);
+			pipeline.setTextureParameters('tex', _textureAddressing, _textureAddressing, _textureFilter, _textureFilter, _textureMipFilter);
 		}
-		
-		_renderer.setPipeline(_pipeline);
-		_renderer.applyUniforms(_pipeline);
+
+		_renderer.setPipeline(pipeline);
+		_renderer.applyUniforms(pipeline);
 
 		_vertexBuffer.unlock(_vertsDraw);
 		_vertices = _vertexBuffer.lock();
@@ -464,6 +499,7 @@ class Graphics extends Batcher {
 
 		_vertsDraw = 0;
 		_indicesDraw = 0;
+		_bufferIdx = 0;
 
 		clearTextures();
 
@@ -866,14 +902,22 @@ class Graphics extends Batcher {
 		// p2y = b * x+w + d * y+h + ty
 		// p3y = b * x   + d * y+h + ty
 
-		final n = _vertPos * Graphics.vertexSizeMultiTextured;
+		var r:FastFloat;
+		var g:FastFloat;
+		var b:FastFloat;
+		var a:FastFloat;
+
+		var p0x:FastFloat;
+		var p0y:FastFloat;
+		var p1x:FastFloat;
+		var p1y:FastFloat;
+		var p2x:FastFloat;
+		var p2y:FastFloat;
+		var p3x:FastFloat;
+		var p3y:FastFloat;
 
 		final xw:FastFloat = x + w;
 		final yh:FastFloat = y + h;
-		var r:FastFloat = 1;
-		var g:FastFloat = 1;
-		var b:FastFloat = 1;
-		var a:FastFloat = 1;
 
 		#if cpp
 		final ma = Float32x4.loadAllFast(_transform.a);
@@ -890,17 +934,17 @@ class Graphics extends Batcher {
 		final simdX = Float32x4.add(Float32x4.add(Float32x4.mul(ma, xx), Float32x4.mul(mc, yy)), mtx);
 		final simdY = Float32x4.add(Float32x4.add(Float32x4.mul(mb, xx), Float32x4.mul(md, yy)), mty);
 
-		final p0x = Float32x4.getFast(simdX, 0);
-		final p0y = Float32x4.getFast(simdY, 0);
+		p0x = Float32x4.getFast(simdX, 0);
+		p0y = Float32x4.getFast(simdY, 0);
 
-		final p1x = Float32x4.getFast(simdX, 1);
-		final p1y = Float32x4.getFast(simdY, 1);
+		p1x = Float32x4.getFast(simdX, 1);
+		p1y = Float32x4.getFast(simdY, 1);
 
-		final p2x = Float32x4.getFast(simdX, 2);
-		final p2y = Float32x4.getFast(simdY, 2);
+		p2x = Float32x4.getFast(simdX, 2);
+		p2y = Float32x4.getFast(simdY, 2);
 
-		final p3x = Float32x4.getFast(simdX, 3);
-		final p3y = Float32x4.getFast(simdY, 3);
+		p3x = Float32x4.getFast(simdX, 3);
+		p3y = Float32x4.getFast(simdY, 3);
 
 		_vertices[n + 0] = p0x;
 		_vertices[n + 1] = p0y;
@@ -928,29 +972,17 @@ class Graphics extends Batcher {
 
 		#else
 		final t = _transform;
-		final p0x = t.getTransformX(x, y);
-		final p0y = t.getTransformY(x, y);
+		p0x = t.getTransformX(x, y);
+		p0y = t.getTransformY(x, y);
 
-		final p1x = t.getTransformX(xw, y);
-		final p1y = t.getTransformY(xw, y);
+		p1x = t.getTransformX(xw, y);
+		p1y = t.getTransformY(xw, y);
 
-		final p2x = t.getTransformX(xw, yh);
-		final p2y = t.getTransformY(xw, yh);
+		p2x = t.getTransformX(xw, yh);
+		p2y = t.getTransformY(xw, yh);
 
-		final p3x = t.getTransformX(x, yh);
-		final p3y = t.getTransformY(x, yh);
-
-		_vertices[n + 0] = p0x;
-		_vertices[n + 1] = p0y;
-
-		_vertices[n + 9] = p1x;
-		_vertices[n + 10] = p1y;
-
-		_vertices[n + 18] = p2x;
-		_vertices[n + 19] = p2y;
-
-		_vertices[n + 27] = p3x;
-		_vertices[n + 28] = p3y;
+		p3x = t.getTransformX(x, yh);
+		p3y = t.getTransformY(x, yh);
 
 		c.multiply(_color);
 
@@ -961,46 +993,14 @@ class Graphics extends Batcher {
 
 		#end
 
-		_vertices[n + 2] = r;
-		_vertices[n + 3] = g;
-		_vertices[n + 4] = b;
-		_vertices[n + 5] = a;
+		final idx = _vertPos * _vertexSize;
 
-		_vertices[n + 11] = r;
-		_vertices[n + 12] = g;
-		_vertices[n + 13] = b;
-		_vertices[n + 14] = a;
-
-		_vertices[n + 20] = r;
-		_vertices[n + 21] = g;
-		_vertices[n + 22] = b;
-		_vertices[n + 23] = a;
-
-		_vertices[n + 29] = r;
-		_vertices[n + 30] = g;
-		_vertices[n + 31] = b;
-		_vertices[n + 32] = a;
-
-		final rxw:FastFloat = rx + rw;
-		final ryh:FastFloat = ry + rh;
-
-		_vertices[n + 6] = rx;
-		_vertices[n + 7] = ry;
-
-		_vertices[n + 15] = rxw;
-		_vertices[n + 16] = ry;
-
-		_vertices[n + 24] = rxw;
-		_vertices[n + 25] = ryh;
-
-		_vertices[n + 33] = rx;
-		_vertices[n + 34] = ryh;
-
-		_vertices[n + 8] = _textureIdx;
-		_vertices[n + 17] = _textureIdx;
-		_vertices[n + 26] = _textureIdx;
-		_vertices[n + 35] = _textureIdx;
-
+		if(_multitexture) {
+			setBufferQuadVerticesMulti(idx, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, r, g, b, a, rx, ry, rx+rw, ry+rh, _textureIdx);
+		} else {
+			setBufferQuadVertices(idx, p0x, p0y, p1x, p1y, p2x, p2y, p3x, p3y, r, g, b, a, rx, ry, rx+rw, ry+rh);
+		}
+		
 		_vertPos+=4;
 
 		final i = _indPos;
@@ -1014,23 +1014,120 @@ class Graphics extends Batcher {
 		_indPos += 6;
 	}
 
-	override function addVertex(x:FastFloat, y:FastFloat, c:Color = Color.WHITE, u:FastFloat = 0, v:FastFloat = 0) {
-		_vertexIdx = _vertPos * Graphics.vertexSizeMultiTextured;
+	function setBufferQuadVertices(
+		idx:Int,
+		p0x:FastFloat, p0y:FastFloat, 
+		p1x:FastFloat, p1y:FastFloat, 
+		p2x:FastFloat, p2y:FastFloat, 
+		p3x:FastFloat, p3y:FastFloat, 
+		r:FastFloat, g:FastFloat, b:FastFloat, a:FastFloat, 
+		u0:FastFloat, v0:FastFloat, u1:FastFloat, v1:FastFloat
+	) {
+		_vertices[idx + 0] = p0x;
+		_vertices[idx + 1] = p0y;
+		_vertices[idx + 2] = r;
+		_vertices[idx + 3] = g;
+		_vertices[idx + 4] = b;
+		_vertices[idx + 5] = a;
+		_vertices[idx + 6] = u0;
+		_vertices[idx + 7] = v0;
 
-		_vertices[_vertexIdx + 0] = _transform.getTransformX(x, y);
-		_vertices[_vertexIdx + 1] = _transform.getTransformY(x, y);
+		_vertices[idx + 8] = p1x;
+		_vertices[idx + 9] = p1y;
+		_vertices[idx + 10] = r;
+		_vertices[idx + 11] = g;
+		_vertices[idx + 12] = b;
+		_vertices[idx + 13] = a;
+		_vertices[idx + 14] = u1;
+		_vertices[idx + 15] = v0;
+
+		_vertices[idx + 16] = p2x;
+		_vertices[idx + 17] = p2y;
+		_vertices[idx + 18] = r;
+		_vertices[idx + 19] = g;
+		_vertices[idx + 20] = b;
+		_vertices[idx + 21] = a;
+		_vertices[idx + 22] = u1;
+		_vertices[idx + 23] = v1;
+
+		_vertices[idx + 24] = p3x;
+		_vertices[idx + 25] = p3y;
+		_vertices[idx + 26] = r;
+		_vertices[idx + 27] = g;
+		_vertices[idx + 28] = b;
+		_vertices[idx + 29] = a;
+		_vertices[idx + 30] = u0;
+		_vertices[idx + 31] = v1;
+	}
+
+	function setBufferQuadVerticesMulti(
+		idx:Int,
+		p0x:FastFloat, p0y:FastFloat, 
+		p1x:FastFloat, p1y:FastFloat, 
+		p2x:FastFloat, p2y:FastFloat, 
+		p3x:FastFloat, p3y:FastFloat, 
+		r:FastFloat, g:FastFloat, b:FastFloat, a:FastFloat, 
+		u0:FastFloat, v0:FastFloat, u1:FastFloat, v1:FastFloat,
+		texId:Int
+	) {
+		_vertices[idx + 0] = p0x;
+		_vertices[idx + 1] = p0y;
+		_vertices[idx + 2] = r;
+		_vertices[idx + 3] = g;
+		_vertices[idx + 4] = b;
+		_vertices[idx + 5] = a;
+		_vertices[idx + 6] = u0;
+		_vertices[idx + 7] = v0;
+		_vertices[idx + 8] = texId;
+
+		_vertices[idx + 9] = p1x;
+		_vertices[idx + 10] = p1y;
+		_vertices[idx + 11] = r;
+		_vertices[idx + 12] = g;
+		_vertices[idx + 13] = b;
+		_vertices[idx + 14] = a;
+		_vertices[idx + 15] = u1;
+		_vertices[idx + 16] = v0;
+		_vertices[idx + 17] = texId;
+
+		_vertices[idx + 18] = p2x;
+		_vertices[idx + 19] = p2y;
+		_vertices[idx + 20] = r;
+		_vertices[idx + 21] = g;
+		_vertices[idx + 22] = b;
+		_vertices[idx + 23] = a;
+		_vertices[idx + 24] = u1;
+		_vertices[idx + 25] = v1;
+		_vertices[idx + 26] = texId;
+
+		_vertices[idx + 27] = p3x;
+		_vertices[idx + 28] = p3y;
+		_vertices[idx + 29] = r;
+		_vertices[idx + 30] = g;
+		_vertices[idx + 31] = b;
+		_vertices[idx + 32] = a;
+		_vertices[idx + 33] = u0;
+		_vertices[idx + 34] = v1;
+		_vertices[idx + 35] = texId;
+	}
+
+	override function addVertex(x:FastFloat, y:FastFloat, c:Color = Color.WHITE, u:FastFloat = 0, v:FastFloat = 0) {
+		_bufferIdx = _vertPos * _vertexSize;
+
+		_vertices[_bufferIdx + 0] = _transform.getTransformX(x, y);
+		_vertices[_bufferIdx + 1] = _transform.getTransformY(x, y);
 
 		c.multiply(_color);
 
-		_vertices[_vertexIdx + 2] = c.r;
-		_vertices[_vertexIdx + 3] = c.g;
-		_vertices[_vertexIdx + 4] = c.b;
-		_vertices[_vertexIdx + 5] = c.a * _opacity;
+		_vertices[_bufferIdx + 2] = c.r;
+		_vertices[_bufferIdx + 3] = c.g;
+		_vertices[_bufferIdx + 4] = c.b;
+		_vertices[_bufferIdx + 5] = c.a * _opacity;
 
-		_vertices[_vertexIdx + 6] = u;
-		_vertices[_vertexIdx + 7] = v;
+		_vertices[_bufferIdx + 6] = u;
+		_vertices[_bufferIdx + 7] = v;
 
-		_vertices[_vertexIdx + 8] = _textureIdx;
+		if(_multitexture) _vertices[_bufferIdx + 8] = _textureIdx;
 
 		_vertPos++;
 	}
@@ -1092,20 +1189,24 @@ class Graphics extends Batcher {
 	}
 
 	function setTexture(texture:Texture) {
-		_textureIdx = getTextureIdx(texture);
+		if(_multitexture) {
+			_textureIdx = getTextureIdx(texture);
 
-		if(_textureIdx < 0) {
-			if(_texturesCount >= Graphics.maxShaderTextures) {
-				flush();
-				stats.textureSwitchCount++;
+			if(_textureIdx < 0) {
+				if(_texturesCount >= Graphics.maxShaderTextures) {
+					flush();
+					stats.textureSwitchCount++;
+				}
+
+				_textureIdx = _texturesCount;
+				_textures[_textureIdx] = texture;
+
+				_texturesCount++;
 			}
-
-			_textureIdx = _texturesCount;
-			_textures[_textureIdx] = texture;
-
+		} else {
+			flush();
 			_lastTexture = texture;
-
-			_texturesCount++;
+			_texturesCount = 1;
 		}
 	}
 
@@ -1126,6 +1227,10 @@ class Graphics extends Batcher {
 		}
 		_lastTexture = null;
 		_texturesCount = 0;
+	}
+
+	function getDefaultPipeline():Pipeline {
+		return _multitexture ? _pipelineMultiTextured : _pipelineTextured;
 	}
 	
 }
