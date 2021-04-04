@@ -187,9 +187,15 @@ class FontImage {
 
 		var c:Color = new Color();
 		var pos:Int = 0;
+		var b:Int = 0;
 		for (y in 0...height){
 			for (x in 0...width) {
-				c.setBytes(255, 255, 255, pixels.readU8(pos));
+				b = pixels.readU8(pos);
+				#if cpp
+				c.setBytes(b, b, b, b);
+				#else
+				c.setBytes(255, 255, 255, b);
+				#end
 				bytes.setInt32(pos*4, c);
 				pos++;
 			}
