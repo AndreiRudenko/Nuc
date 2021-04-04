@@ -203,7 +203,7 @@ class Graphics extends Batcher {
 
 	public var target(default, null):Texture;
 
-	public var isDrawing:Bool = false;
+	public var isDrawing(default, null):Bool = false;
 
 	public var stats:DrawStats;
 
@@ -945,18 +945,6 @@ class Graphics extends Batcher {
 
 		p3x = Float32x4.getFast(simdX, 3);
 		p3y = Float32x4.getFast(simdY, 3);
-
-		_vertices[n + 0] = p0x;
-		_vertices[n + 1] = p0y;
-
-		_vertices[n + 9] = p1x;
-		_vertices[n + 10] = p1y;
-
-		_vertices[n + 18] = p2x;
-		_vertices[n + 19] = p2y;
-
-		_vertices[n + 27] = p3x;
-		_vertices[n + 28] = p3y; 
 
 		final ca = Float32x4.loadFast(c.rB, c.gB, c.bB, c.aB);
 		final cb = Float32x4.loadFast(_color.rB, _color.gB, _color.bB, _color.aB);
