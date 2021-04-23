@@ -12,6 +12,11 @@
 extern "C" {
 #endif
 
+#ifdef ANDROID
+#define KINC_ATOMIC_EXCHANGE_32(pointer, value) (__sync_swap(pointer, value))
+#define KINC_ATOMIC_EXCHANGE_FLOAT(pointer, value) (__sync_swap((volatile int32_t *)pointer, *(int32_t *)&value))
+#endif
+
 struct stb_vorbis;
 
 struct NucAudioChannel {
@@ -67,6 +72,7 @@ struct NucStreamChannel {
 void Audio_init();
 bool Audio_play(struct NucAudioChannel *channel, bool loop);
 bool Audio_stream(struct NucStreamChannel *channel, bool loop);
+
 void NucAudioChannel_playAgain(struct NucAudioChannel *channel);
 void NucStreamChannel_playAgain(struct NucStreamChannel *channel);
 

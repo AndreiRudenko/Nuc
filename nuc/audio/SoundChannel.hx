@@ -58,6 +58,7 @@ class SoundChannel implements nuc.audio.AudioChannel {
 
 		float l;
 		float r;
+		
 		Audio_calcVolume(channel->volume, value, &l, &r);
 
 		KINC_ATOMIC_EXCHANGE_FLOAT(&channel->pan, value);
