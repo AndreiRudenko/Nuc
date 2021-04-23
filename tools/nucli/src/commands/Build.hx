@@ -61,8 +61,12 @@ class Build extends Command {
 			var iconPath = Path.join([CLI.userDir, config.app.icon]);
 			var destPath = Path.join([CLI.userDir, 'icon.png']);
 			if (FileSystem.exists(iconPath)) {
-				File.copy(iconPath, destPath);
-				CLI.print('Copy icon from: $iconPath');
+				if(iconPath != destPath) {
+					File.copy(iconPath, destPath);
+					CLI.print('Copy icon from: $iconPath');
+				} else {
+					CLI.print('Skip copy icon: $iconPath');
+				}
 			} else {
 				CLI.print('Can`t find icon at: $iconPath');
 			}
