@@ -55,7 +55,7 @@ class Graphics extends Batcher {
 	static public var pipelineTextured:Pipeline;
 	static public var pipelineMultiTextured:Pipeline;
 
-	static var frameBuffer:Framebuffer;
+	static public var frameBuffer:Framebuffer;
 	static var vertexBuffer:VertexBuffer;
 	static var indexBuffer:IndexBuffer;
 	static var blitProjection:FastMatrix3;
@@ -305,7 +305,7 @@ class Graphics extends Batcher {
 	var _multitexture:Bool = true;
 	inline function get_multitexture() return _multitexture; 
 	function set_multitexture(v:Bool):Bool {
-		if(_multitexture != v) {
+		if(_multitexture != v) { // TODO: test on and off this
 			if(isDrawing) flush();
 			if(v) {
 				_vertexSize = Graphics.vertexSizeMultiTextured;
@@ -472,6 +472,9 @@ class Graphics extends Batcher {
 
 		pipeline.setMatrix3('projectionMatrix', _projection);
 
+		_vertexBuffer.unlock(_vertsDraw);
+		_indexBuffer.unlock(_indicesDraw);
+
 		if(_multitexture) {
 			var i:Int = 0;
 			while(i < _texturesCount) {
@@ -487,12 +490,7 @@ class Graphics extends Batcher {
 		_renderer.setPipeline(pipeline);
 		_renderer.applyUniforms(pipeline);
 
-		_vertexBuffer.unlock(_vertsDraw);
-		_vertices = _vertexBuffer.lock();
 		_renderer.setVertexBuffer(_vertexBuffer);
-
-		_indexBuffer.unlock(_indicesDraw);
-		_indices = _indexBuffer.lock();
 		_renderer.setIndexBuffer(_indexBuffer);
 
 		_renderer.draw(0, _indicesDraw);
@@ -501,7 +499,15 @@ class Graphics extends Batcher {
 		_indicesDraw = 0;
 		_bufferIdx = 0;
 
+		if(!_multitexture) {
+			pipeline.setTexture('tex', null);
+			_renderer.applyUniforms(pipeline);
+		}
+
 		clearTextures();
+
+		_vertices = _vertexBuffer.lock();
+		_indices = _indexBuffer.lock();
 
 		stats.drawCalls++;
 	}
