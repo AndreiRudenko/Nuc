@@ -32,12 +32,18 @@ class Gamepads {
 
 		_gamepads = new Map();
 
-		#if nuc_gamepad_input
-		kha.input.Gamepad.notifyOnConnect(onConnect, onDisconnect);
-		#end 
-
 		_gamepadEvent = new GamepadEvent();
 		active = true;
+
+		#if nuc_gamepad_input
+		kha.input.Gamepad.notifyOnConnect(onConnect, onDisconnect);
+		for (i in 0...4) {
+			var g = kha.input.Gamepad.get(i);
+			if (g != null && g.connected) {
+				onConnect(i);
+			}
+		}
+		#end 
 	}
 
 	public function disable() {
@@ -213,7 +219,7 @@ class Gamepad {
 	}
 
 	public function rumble(leftAmount:Float, rightAmount:Float) {
-		// kha.input.Gamepad.get(gamepad).rumble(leftAmount, rightAmount);
+		kha.input.Gamepad.get(gamepad).rumble(leftAmount, rightAmount);
 	}
 
 	function listenEvents() {
@@ -265,7 +271,9 @@ class Gamepad {
 		_gamepads.checkBinding(gamepad, b, true);
 		Nuc.app.emitter.emit(GamepadEvent.BUTTON_DOWN, _gamepadEvent);
 	}
-
+	
+	// TODO: Fix on HTML5 target, when controller is connected, and you press button, after connection event, goes buttonPressed
+	// and then for all buttons it sends event buttonReleased
 	inline function onReleased(b:Int) {
 		Log.debug('onReleased gamepad:$gamepad, button:$b');
 
