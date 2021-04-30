@@ -1,5 +1,7 @@
 package nuc;
 
+typedef MouseCursor = kha.input.Mouse.MouseCursor;
+
 
 class Cursor {
 
@@ -43,6 +45,11 @@ class Cursor {
 	public function unlock() {
 		var m = kha.input.Mouse.get();
 		if(m != null) m.unlock();
+	}
+
+	public function setSystemCursor(cursor:MouseCursor) {
+		var m = kha.input.Mouse.get();
+		if(m != null) m.setSystemCursor(cursor);
 	}
 
 	function onMove(x:Int, y:Int, dx:Int, dy:Int) {
