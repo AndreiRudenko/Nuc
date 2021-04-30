@@ -305,8 +305,9 @@ class Graphics extends Batcher {
 	var _multitexture:Bool = true;
 	inline function get_multitexture() return _multitexture; 
 	function set_multitexture(v:Bool):Bool {
-		if(_multitexture != v) { // TODO: test on and off this
+		if(_multitexture != v) {
 			if(isDrawing) flush();
+			_vertexBuffer.unlock();
 			if(v) {
 				_vertexSize = Graphics.vertexSizeMultiTextured;
 				_vertexBuffer = _vertexBufferMultiTextured;
@@ -604,6 +605,7 @@ class Graphics extends Batcher {
 			Log.warning('pop scissor with no scissors left in stack');
 		}
 	}
+	
 	// transformation
 	public function pushTransform(?m:FastMatrix3) {
 		_transformStack.push(_transform);
