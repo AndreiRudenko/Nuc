@@ -56,13 +56,13 @@ abstract Color(Int) from kha.Color to kha.Color from Int to Int {
 		return this;
 	}
 
-	public inline function lerp(to:Color, t:Float):Color {
+	static public function lerp(from:Color, to:Color, t:Float):Color {
 		t = Math.clamp(t, 0, 1);
-		return set(
-			r + t * (to.r - r),
-			g + t * (to.g - g),
-			b + t * (to.b - b),
-			a + t * (to.a - a)
+		return new Color(
+			from.r + t * (to.r - from.r),
+			from.g + t * (to.g - from.g),
+			from.b + t * (to.b - from.b),
+			from.a + t * (to.a - from.a)
 		);
 	}
 
