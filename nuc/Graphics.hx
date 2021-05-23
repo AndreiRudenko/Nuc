@@ -86,8 +86,8 @@ class Graphics extends Batcher {
 		structure = new VertexStructure();
 		structure.add("position", VertexData.Float2);
 		structure.add("color", VertexData.Float4);
-		structure.add("texCoord", VertexData.Float2);
-		structure.add("texId", VertexData.Float1);
+		structure.add("texCoord", VertexData.Float3); // last one for texId
+		// structure.add("texId", VertexData.Float1); // crashes in Krom
 		
 		pipelineMultiTextured = new Pipeline([structure], Shaders.multitextured_vert, Shaders.multitextured8_frag);
 
