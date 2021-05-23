@@ -8,6 +8,7 @@ class CLI {
 	public static final engineName:String = 'nuc';
 	public static final templatesPath:String = 'templates';
 	public static final khaPath:String = 'Kha';
+	public static final kromPath:String = 'Krom';
 	public static final resourcesPath:String = 'resources';
 
 	public static var commandMap:Map<String, Command>;
@@ -15,7 +16,7 @@ class CLI {
 	public static var engineDir:String;
 	public static var khamakePath:String;
 
-	public static var targets:Array<String> = ['html5', 'windows', 'windows-hl', 'osx', 'linux', 'android-native', 'android-hl', 'ios', 'uwp'];
+	public static var targets:Array<String> = ['html5', 'krom', 'windows', 'windows-hl', 'osx', 'linux', 'android-native', 'android-hl', 'ios', 'uwp'];
 
 	static function main() {
 		var args = Sys.args();

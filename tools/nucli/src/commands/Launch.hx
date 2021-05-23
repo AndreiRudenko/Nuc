@@ -53,6 +53,12 @@ class Launch extends Command {
 					default:
 				}
 			}
+			case 'krom' : {
+				var path = Path.join([CLI.engineDir, '${CLI.kromPath}/Krom']);
+				var assets = Path.join([CLI.userDir, 'build/krom']);
+				var shaders = Path.join([CLI.userDir, 'build/krom-resources']);
+				CLI.execute(path, [assets, shaders]);
+			}
 			case 'windows' : {
 				var path = Path.join([CLI.userDir, 'build/windows/${config.project.title}.exe']);
 				if(!FileSystem.exists(path)) {

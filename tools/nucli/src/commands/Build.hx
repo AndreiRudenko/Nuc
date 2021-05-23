@@ -49,7 +49,8 @@ class Build extends Command {
 		}
 
 		// create build folder
-		var buildPath = Path.join([CLI.userDir, 'build']);
+		// var buildPath = Path.join([CLI.userDir, 'build']);
+		var buildPath = Path.join([CLI.userDir]);
 		if (!FileSystem.exists(buildPath)) FileSystem.createDirectory(buildPath);
 
 		// create kha file
