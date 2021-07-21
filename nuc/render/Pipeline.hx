@@ -61,6 +61,10 @@ class Pipeline {
 	public var colorWriteMaskAlpha(get, set):Bool;
 	inline function get_colorWriteMaskAlpha() return _pipeline.colorWriteMaskAlpha;
 	inline function set_colorWriteMaskAlpha(v:Bool) return _pipeline.colorWriteMaskAlpha = v;
+	
+	public var conservativeRasterization(get, set):Bool;
+	inline function get_conservativeRasterization() return _pipeline.conservativeRasterization;
+	inline function set_conservativeRasterization(v:Bool) return _pipeline.conservativeRasterization = v;
 
 	var _pipeline:PipelineState;
 	var _textureParameters:TextureParameters;
