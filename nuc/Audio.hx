@@ -12,7 +12,6 @@ import nuc.utils.Log;
 
 #if cpp
 @:cppFileCode('
-#include <kinc/pch.h>
 #include <kinc/audio2/audio.h>
 #include <nuc_audio/audio1.h>
 ')

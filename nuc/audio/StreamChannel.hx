@@ -9,7 +9,6 @@ import nuc.Audio;
 #if cpp
 @:cppFileCode('
 #define STB_VORBIS_HEADER_ONLY
-#include <kinc/pch.h>
 #include <kinc/audio2/audio.h>
 #include <kinc/math/core.h>
 #include <math.h>

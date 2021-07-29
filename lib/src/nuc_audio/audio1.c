@@ -1,5 +1,3 @@
-#include <kinc/pch.h>
-
 #define STB_VORBIS_HEADER_ONLY
 #include <kinc/audio1/stb_vorbis.c>
 

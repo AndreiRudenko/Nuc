@@ -6,9 +6,7 @@ import nuc.resources.Resource;
 import nuc.Audio;
 
 #if cpp
-
 @:cppFileCode('
-#include <kinc/pch.h>
 #include <kinc/audio2/audio.h>
 #include <kinc/math/core.h>
 #include <nuc_audio/audio1.h>
