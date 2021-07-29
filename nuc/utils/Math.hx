@@ -204,6 +204,10 @@ class Math {
 		return (i % n + n) % n;
 	}
 
+	static public inline function fmod(n:Float, d:Float):Float {
+		return n - d * Math.floor(n/d);
+	}
+
 	static public inline function distanceSq(dx:Float, dy:Float) {
 		return dx * dx + dy * dy;
 	}

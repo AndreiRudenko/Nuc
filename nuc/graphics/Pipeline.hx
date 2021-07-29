@@ -1,4 +1,4 @@
-package nuc.render;
+package nuc.graphics;
 
 import kha.graphics4.Graphics;
 import kha.graphics4.PipelineState;
@@ -14,9 +14,9 @@ import kha.arrays.Float32Array;
 
 import nuc.graphics.Texture;
 import nuc.graphics.Video;
-import nuc.render.VertexBuffer;
-import nuc.render.VertexStructure;
-import nuc.render.Uniforms;
+import nuc.graphics.VertexBuffer;
+import nuc.graphics.VertexStructure;
+import nuc.graphics.Uniforms;
 
 typedef BlendFactor = kha.graphics4.BlendingFactor;
 typedef BlendOperation = kha.graphics4.BlendingOperation;

@@ -11,7 +11,6 @@ class Nuc {
 	static public var window(get, never):nuc.Window;
 	static public var cursor(get, never):nuc.Cursor;
 	static public var graphics(get, never):nuc.Graphics;
-	static public var renderer(get, never):nuc.Renderer;
 	static public var input(get, never):nuc.Input;
 	static public var resources(get, never):nuc.Resources;
 	static public var audio(get, never):nuc.Audio;
@@ -20,7 +19,6 @@ class Nuc {
 	static inline function get_window() return app.window;
 	static inline function get_cursor() return app.cursor;
 	static inline function get_graphics() return app.graphics;
-	static inline function get_renderer() return app.renderer;
 	static inline function get_input() return app.input;
 	static inline function get_resources() return app.resources;
 	static inline function get_audio() return app.audio;

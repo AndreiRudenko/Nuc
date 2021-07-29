@@ -1,4 +1,4 @@
-package nuc.render;
+package nuc.graphics;
 
 
 typedef VertexStructure = kha.graphics4.VertexStructure;

@@ -10,7 +10,6 @@ import nuc.Input;
 import nuc.Window;
 import nuc.Cursor;
 import nuc.Graphics;
-import nuc.Renderer;
 import nuc.Resources;
 
 import nuc.events.AppEvent;
@@ -26,7 +25,6 @@ class App {
 	public var window(default, null):Window;
 	public var cursor(default, null):Cursor;
 	public var graphics(default, null):Graphics;
-	public var renderer(default, null):Renderer;
 	public var input(default, null):Input;
 	public var resources(default, null):Resources;
 	public var audio(default, null):nuc.Audio;
@@ -101,7 +99,7 @@ class App {
 
 		_options = {};
 		_options.title = def(options.title, "nuc game");
-		_options.graphics = def(options.graphics, {});
+		// _options.graphics = def(options.graphics, {});
 		_options.width = def(options.width, 800);
 		_options.height = def(options.height, 600);
 		_options.vsync = def(options.vsync, false);
@@ -139,7 +137,6 @@ class App {
 
 		nuc.Nuc.app = this;
 		resources = new Resources();
-		resources.init();
 
 		#if !nuc_no_default_font
 		resources.loadAll(
@@ -161,20 +158,20 @@ class App {
 
 	function init() {
 		Log.debug("init");
+		
+		resources.init();
 
 		_appEvent = new AppEvent();
 		_renderEvent = new RenderEvent();
 
 		emitter = new Emitter();
-
-		renderer = new Renderer();
 		
 		input = new Input();
 		window = new Window(0, _options.antialiasing);
 		cursor = new Cursor();
 		
 		Graphics.setup();
-		graphics = new Graphics(renderer, _options.graphics);
+		graphics = new Graphics();
 		
 		audio = new Audio();
 		
@@ -183,7 +180,7 @@ class App {
 
 		input.init();
 		window.init();
-		graphics.init();
+		// graphics.init();
 
 		connectEvents();
 	}
@@ -193,7 +190,7 @@ class App {
 
 		window.dispose();
 		input.dispose();
-		graphics.dispose();
+		// graphics.dispose();
 
 		resources.dispose();
 	}
@@ -222,7 +219,7 @@ class App {
 
 		emitter.emit(AppEvent.UPDATE, deltaTime);
 
-		_renderEvent.set(renderer, graphics, window.buffer.image.g2, window.buffer.image.g4);
+		_renderEvent.set(graphics, window.buffer.image.g2, window.buffer.image.g4);
 
 		emitter.emit(RenderEvent.PRERENDER, _renderEvent);
 		emitter.emit(RenderEvent.RENDER, _renderEvent);
@@ -266,7 +263,7 @@ typedef NucOptions = {
 	?antialiasing:Int,
 	?vsync:Bool,
 	// ?randomSeed:Int,
-	?graphics:GraphicsOptions,
+	// ?graphics:GraphicsOptions,
 	?window:WindowOptions
 };
 

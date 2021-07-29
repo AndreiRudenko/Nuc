@@ -1,4 +1,4 @@
-package nuc.render;
+package nuc.graphics;
 
 import kha.graphics4.ConstantLocation;
 import kha.graphics4.TextureUnit;

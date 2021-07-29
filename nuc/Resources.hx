@@ -16,6 +16,8 @@ import haxe.io.Path;
 @:allow(nuc.App, nuc.resources.Resource)
 class Resources {
 
+	static public var fontDefault:Font;
+
 	public var cache(default, null):Map<String, Resource>;
 	public var stats:ResourceStats;
 
@@ -40,7 +42,9 @@ class Resources {
 	}
 
 	function init() {
-		
+		#if !nuc_no_default_font
+		fontDefault = Nuc.resources.font("Muli-Regular.ttf");
+		#end
 	}
 
 	function dispose() {
