@@ -13,7 +13,6 @@ import kha.math.FastVector4;
 import kha.arrays.Float32Array;
 
 import nuc.graphics.Texture;
-import nuc.graphics.Video;
 import nuc.graphics.VertexBuffer;
 import nuc.graphics.VertexStructure;
 import nuc.graphics.Uniforms;
@@ -140,8 +139,6 @@ class Pipeline {
 		_textureParameters.mipmapFilter = mipmapFilter;
 		return uniforms.setTextureParameters(name, _textureParameters);
 	}
-
-	public function setVideo(name:String, value:Video) return uniforms.setVideo(name, value);
 
 	public function compile() {
 		_pipeline.compile();

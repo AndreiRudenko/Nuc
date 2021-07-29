@@ -6,7 +6,6 @@ import nuc.resources.JsonResource;
 import nuc.resources.TextResource;
 import nuc.graphics.Font;
 import nuc.graphics.Texture;
-import nuc.graphics.Video;
 import nuc.audio.Sound;
 
 import nuc.utils.Log;
@@ -24,14 +23,12 @@ class Resources {
 	var _textureExt:Array<String>;
 	var _soundExt:Array<String>;
 	var _fontExt:Array<String>;
-	var _videoExt:Array<String>;
 
 	var _resourcesPath:String = '';
 
 	function new() {
 		_textureExt = kha.Assets.imageFormats;
 		_soundExt = kha.Assets.soundFormats;
-		_videoExt = kha.Assets.videoFormats;
 		_fontExt = kha.Assets.fontFormats;
 
 		cache = new Map();
@@ -43,7 +40,7 @@ class Resources {
 
 	function init() {
 		#if !nuc_no_default_font
-		fontDefault = Nuc.resources.font("Muli-Regular.ttf");
+		fontDefault = Nuc.resources.getFont("Muli-Regular.ttf");
 		#end
 	}
 
@@ -105,7 +102,6 @@ class Resources {
 			case e if (_textureExt.indexOf(e) != -1): loadTexture(name, onComplete);
 			case e if (_fontExt.indexOf(e) != -1): loadFont(name, onComplete);
 			case e if (_soundExt.indexOf(e) != -1): loadSound(name, onComplete, uncompressSound);
-			case e if (_videoExt.indexOf(e) != -1): loadVideo(name, onComplete);
 			case "json": loadJson(name, onComplete);
 			case "txt": loadText(name, onComplete);
 			default: loadBytes(name, onComplete);
@@ -229,29 +225,6 @@ class Resources {
 		);
 	}
 
-	public function loadVideo(name:String, ?onComplete:(r:Video)->Void) {
-		var res:Video = cast cache.get(name);
-
-		if(res != null) {
-			Log.warning('video resource already exists: $name');
-			if(onComplete != null) onComplete(res);
-			return;
-		}
-
-		Log.debug('video / loading / $name');
-
-		kha.Assets.loadVideoFromPath(
-			getResourcePath(name), 
-			function(v:kha.Video){
-				res = new Video(v);
-				res.name = name;
-				add(res);
-				if(onComplete != null) onComplete(res);
-			},
-			onError
-		);
-	}
-
 	public function loadSound(name:String, ?onComplete:(r:Sound)->Void, uncompress:Bool = true) {
 		var res:Sound = cast cache.get(name);
 
@@ -314,13 +287,12 @@ class Resources {
 	public inline function has(name:String):Bool return cache.exists(name);
 
 	public function get(name:String):Resource return fetch(name);
-	public function bytes(name:String):BytesResource return fetch(name);
-	public function text(name:String):TextResource return fetch(name);
-	public function json(name:String):JsonResource return fetch(name);
-	public function texture(name:String):Texture return fetch(name);
-	public function font(name:String):Font return fetch(name);
-	public function video(name:String):Video return fetch(name);
-	public function sound(name:String):Sound return fetch(name);
+	public function getBytes(name:String):BytesResource return fetch(name);
+	public function getText(name:String):TextResource return fetch(name);
+	public function getJson(name:String):JsonResource return fetch(name);
+	public function getTexture(name:String):Texture return fetch(name);
+	public function getFont(name:String):Font return fetch(name);
+	public function getSound(name:String):Sound return fetch(name);
 
 	inline function fetch<T>(name:String):T {
 		var res:T = cast cache.get(name);
@@ -338,7 +310,6 @@ class Resources {
 			case ResourceType.RENDERTEXTURE:    stats.rtt       += _offset;
 			case ResourceType.FONT:             stats.fonts     += _offset;
 			case ResourceType.SOUND:            stats.sounds    += _offset;
-			case ResourceType.VIDEO:            stats.videos    += _offset;
 			default:
 		}
 
@@ -365,7 +336,6 @@ class ResourceStats {
 	public var jsons:Int = 0;
 	public var bytes:Int = 0;
 	public var sounds:Int = 0;
-	public var videos:Int = 0;
 	public var unknown:Int = 0;
 
 	public function new() {} 
@@ -381,7 +351,6 @@ class ResourceStats {
 			"\tjson : " + jsons + "\n" +
 			"\tbytes : " + bytes + "\n" +
 			"\tsounds : " + sounds + "\n" +
-			"\tvideos : " + sounds + "\n" +
 			"\tunknown : " + unknown;
 	} 
 
@@ -394,7 +363,6 @@ class ResourceStats {
 		jsons = 0;
 		bytes = 0;
 		sounds = 0;
-		videos = 0;
 		unknown = 0;
 	} 
 
@@ -409,5 +377,4 @@ enum abstract ResourceType(Int) {
 	var RENDERTEXTURE;
 	var FONT;
 	var SOUND;
-	var VIDEO;
 }

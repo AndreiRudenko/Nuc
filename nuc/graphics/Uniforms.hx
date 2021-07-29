@@ -13,7 +13,6 @@ import nuc.math.FastVector2;
 import nuc.math.FastVector3;
 import nuc.math.FastVector4;
 import nuc.graphics.Texture;
-import nuc.graphics.Video;
 import nuc.utils.ArrayTools;
 
 class Uniforms {
@@ -35,7 +34,6 @@ class Uniforms {
 
 	var textureMap:Map<String, Uniform<Texture,TextureUnit>>;
 	var textureParamsMap:Map<String, Uniform<TextureParameters,TextureUnit>>;
-	var videoMap:Map<String, Uniform<Video,TextureUnit>>;
 
 	var dirtyUniforms:Array<UniformBase>;
 
@@ -59,7 +57,6 @@ class Uniforms {
 		matrix4Map = new Map();
 		textureMap = new Map();
 		textureParamsMap = new Map();
-		videoMap = new Map();
 
 		dirtyUniforms = [];
 	}
@@ -330,25 +327,6 @@ class Uniforms {
 		return texParams;
 	}
 
-	public inline function setVideo(name:String, value:Video) {
-		var video = videoMap.get(name);
-
-		if(video != null) {
-			video.value = value;
-		} else {
-			var location = pipeline.getTextureUnit(name);
-			video = new UniformVideo(value, location);
-			videoMap.set(name, video);
-		}
-
-		if(!video.used) {
-			dirtyUniforms.push(video);
-			video.used = true;
-		}
-		
-		return video;
-	}
-
 	public inline function apply(g:Graphics) {
 		if(dirtyUniforms.length > 0) {
 			var i = 0;
@@ -493,14 +471,6 @@ private class UniformTextureParameters extends Uniform<TextureParameters, Textur
 
 	override function commit(g:Graphics) {
 		g.setTextureParameters(location, value.uAddressing, value.vAddressing, value.filterMin, value.filterMag, value.mipmapFilter);
-	}
-
-}
-
-private class UniformVideo extends Uniform<Video, TextureUnit> {
-
-	override function commit(g:Graphics) {
-		g.setVideoTexture(location, value != null ? value.video : null);
 	}
 
 }
