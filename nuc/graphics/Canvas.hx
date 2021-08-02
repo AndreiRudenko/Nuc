@@ -27,7 +27,7 @@ import nuc.utils.Log;
 class Canvas {
 
 	public var transform(get, set):FastMatrix3;
-	var _transform:FastMatrix3 = new FastMatrix3();
+	var _transform:FastMatrix3;
 	inline function get_transform() return _transform; 
 	function set_transform(v:FastMatrix3):FastMatrix3 {
 		return _transform.copyFrom(v);
@@ -40,6 +40,8 @@ class Canvas {
 	var _invertseTransformDirty:Bool = true;
 
 	public function new() {
+		_transform = new FastMatrix3();
+		_invertseTransform = new FastMatrix3();
 		_transformStack = [];
 		_transformPool = new DynamicPool<FastMatrix3>(16, function() { return new FastMatrix3(); });
 	}
