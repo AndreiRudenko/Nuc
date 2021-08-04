@@ -76,6 +76,7 @@ class SpriteBatch extends Canvas {
 	}
 	
 	public var fontSize:Int = 16;
+	public var fontScale:Float = 1;
 
 	public var textureFilter(get, set):TextureFilter;
 	var _textureFilter:TextureFilter = TextureFilter.PointFilter;
@@ -171,10 +172,9 @@ class SpriteBatch extends Canvas {
 	}
 
 	public function begin(?target:Texture) {
-		if(target == null) target = Nuc.window.buffer;
 		this.target = target;
 		_graphics.begin(target);
-		setProjection(target.widthActual, target.heightActual);
+		setProjection();
 		isDrawing = true;
 		renderCalls = 0;
 	}
@@ -287,8 +287,11 @@ class SpriteBatch extends Canvas {
 
 	public function drawString(text:String, x:FastFloat, y:FastFloat, spacing:Int = 0) {
 		if(text.length == 0) return;
+		
+		var scaledFontSize:Int = Math.round(fontSize*fontScale);
+		var scaleDiff:Float = fontSize / scaledFontSize;
 
-		final fontImage = font.getFontImage(fontSize);
+		final fontImage = font.getFontImage(scaledFontSize);
 		final texture = fontImage.texture;
 
 		if (_lastTexture != texture) flush();
@@ -319,10 +322,10 @@ class SpriteBatch extends Canvas {
 				if(charIndex > 0) { // skip space
 					if (_bufferIdx + 1 >= _bufferSize) flush();
 
-					x0 = charQuad.x0;
-					y0 = charQuad.y0;
-					x1 = charQuad.x1;
-					y1 = charQuad.y1;
+					x0 = charQuad.x0 * scaleDiff;
+					y0 = charQuad.y0 * scaleDiff;
+					x1 = charQuad.x1 * scaleDiff;
+					y1 = charQuad.y1 * scaleDiff;
 
 					left = charQuad.s0 * texRatioW;
 					top = charQuad.t0 * texRatioH;
@@ -364,11 +367,15 @@ class SpriteBatch extends Canvas {
 		return idx;
 	}
 
-	function setProjection(width:Float, height:Float) {
-		if(Texture.renderTargetsInvertedY) {
-			_projection.orto(0, width, 0, height);
+	function setProjection() {
+		if (target == null) {
+			_projection.orto(0, Graphics.frameBuffer.width, Graphics.frameBuffer.height, 0);
 		} else {
-			_projection.orto(0, width, height, 0);
+			if(Texture.renderTargetsInvertedY) {
+				_projection.orto(0, target.width, 0, target.height);
+			} else {
+				_projection.orto(0, target.width, target.height, 0);
+			}
 		}
 	}
 	

@@ -165,10 +165,9 @@ class GeomBatch extends Canvas {
 	}
 
 	public function begin(?target:Texture) {
-		if(target == null) target = Nuc.window.buffer;
 		this.target = target;
 		_graphics.begin(target);
-		setProjection(target.widthActual, target.heightActual);
+		setProjection();
 		isDrawing = true;
 		renderCalls = 0;
 	}
@@ -314,11 +313,15 @@ class GeomBatch extends Canvas {
 		_inGeometryMode = false;
 	}
 
-	function setProjection(width:Float, height:Float) {
-		if(Texture.renderTargetsInvertedY) {
-			_projection.orto(0, width, 0, height);
+	function setProjection() {
+		if (target == null) {
+			_projection.orto(0, Graphics.frameBuffer.width, Graphics.frameBuffer.height, 0);
 		} else {
-			_projection.orto(0, width, height, 0);
+			if(Texture.renderTargetsInvertedY) {
+				_projection.orto(0, target.width, 0, target.height);
+			} else {
+				_projection.orto(0, target.width, target.height, 0);
+			}
 		}
 	}
 

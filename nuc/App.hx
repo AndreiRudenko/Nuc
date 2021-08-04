@@ -167,7 +167,7 @@ class App {
 		emitter = new Emitter();
 		
 		input = new Input();
-		window = new Window(0, _options.antialiasing);
+		window = new Window(0);
 		cursor = new Cursor();
 		
 		Graphics.setup();
@@ -179,7 +179,6 @@ class App {
 		_lastFrameTime = realTime;
 
 		input.init();
-		window.init();
 		// graphics.init();
 
 		connectEvents();
@@ -219,13 +218,12 @@ class App {
 
 		emitter.emit(AppEvent.UPDATE, deltaTime);
 
-		_renderEvent.set(graphics, window.buffer.image.g2, window.buffer.image.g4);
+		_renderEvent.set(graphics, f[0].g2, f[0].g4);
 
 		emitter.emit(RenderEvent.PRERENDER, _renderEvent);
 		emitter.emit(RenderEvent.RENDER, _renderEvent);
 
 		Graphics.render(f);
-		window.render();
 
 		emitter.emit(RenderEvent.POSTRENDER, _renderEvent);
 
@@ -262,8 +260,6 @@ typedef NucOptions = {
 	?height:Int,
 	?antialiasing:Int,
 	?vsync:Bool,
-	// ?randomSeed:Int,
-	// ?graphics:GraphicsOptions,
 	?window:WindowOptions
 };
 

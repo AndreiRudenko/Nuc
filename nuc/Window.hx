@@ -46,16 +46,6 @@ class Window {
 
 	public var mid(default, null):Vector2;
 
-	public var antialiasing(get, set):Int;
-	var _antialiasing:Int = 1;
-	inline function get_antialiasing() return _antialiasing;
-	function set_antialiasing(v:Int):Int {
-		// Log.assert(!Nuc.renderer.isRendering, 'you cant change antialiasing while rendering');
-		_antialiasing = v;
-		updateBufferSize();
-		return v;
-	}
-
 	public var fullscreen(get, set):Bool;
 	inline function get_fullscreen() return _window.mode == WindowMode.Fullscreen;
 	function set_fullscreen(v:Bool):Bool {
@@ -64,29 +54,26 @@ class Window {
 		} else if(fullscreen) {
 			_window.mode = WindowMode.Windowed;
 		}
-
 		return v;
 	}
-
-	public var buffer(default, null):Texture;
 
 	var _windowId:Int = 0; // TODO: multiple windows ?
 	var _window:kha.Window;
 	var _windowEvent:WindowEvent;
 
-	function new(id:Int, antialiasing:Int) {
+	function new(id:Int) {
 		// all[id] = this;
 		_windowId = id;
-		_antialiasing = antialiasing;
 		_window = kha.Window.get(_windowId);
 		_window.notifyOnResize(onResize);
 		mid = new Vector2();
 		_windowEvent = new WindowEvent();
+		updateMidSize();
 	}
 
 	public function resize(w:Int, h:Int) {
 		_window.resize(w, h);
-		updateBufferSize();
+		updateMidSize();
 	}
 
 	function onResize(w:Int, h:Int) {
@@ -94,41 +81,12 @@ class Window {
 		Nuc.app.emitter.emit(WindowEvent.RESIZE, _windowEvent);
 	}
 
-	function init() {
-		updateBufferSize();
-	}
-
 	function dispose() {
 		// all[_windowId] = null;
-		if(buffer != null) {
-			buffer.unload();
-			Nuc.resources.remove(buffer);
-		}
 		mid = null;
 	}
 
-	function render() {
-		Graphics.blit(buffer);
-	}
-
-	function updateBufferSize() {
-		if(buffer != null) {
-			buffer.unload();
-			Nuc.resources.remove(buffer);
-		}
-
-		buffer = Texture.createRenderTarget(
-			width, 
-			height, 
-			TextureFormat.RGBA32, 
-			DepthStencilFormat.NoDepthAndStencil,
-			_antialiasing
-		);
-		
-		buffer.name = 'windowbuffer';
-		buffer.ref();
-		Nuc.resources.add(buffer);
-
+	function updateMidSize() {
 		mid.set(width*0.5, height*0.5);
 	}
 

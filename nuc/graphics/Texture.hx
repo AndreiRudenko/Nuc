@@ -12,6 +12,7 @@ typedef TextureFilter = kha.graphics4.TextureFilter;
 typedef MipMapFilter = kha.graphics4.MipMapFilter;
 typedef TextureAddressing = kha.graphics4.TextureAddressing;
 
+@:keep // in cpp build, cant find Image_obj.unload() function
 class Texture extends Resource {
 
 	static public var maxSize(get, never):Int;
