@@ -216,15 +216,14 @@ class App {
 		deltaTime = _time - _lastTime;
 		frameDeltaTime = _frameTime - _lastFrameTime;
 
+		Graphics.setFramebuffer(f);
+
 		emitter.emit(AppEvent.UPDATE, deltaTime);
 
 		_renderEvent.set(graphics, f[0].g2, f[0].g4);
 
 		emitter.emit(RenderEvent.PRERENDER, _renderEvent);
 		emitter.emit(RenderEvent.RENDER, _renderEvent);
-
-		Graphics.render(f);
-
 		emitter.emit(RenderEvent.POSTRENDER, _renderEvent);
 
 		_lastTime = time;

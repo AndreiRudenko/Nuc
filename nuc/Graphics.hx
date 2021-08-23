@@ -103,7 +103,7 @@ class Graphics {
 	}
 
 	@:allow(nuc.App)
-	static function render(f:Array<Framebuffer>) {
+	static function setFramebuffer(f:Array<Framebuffer>) {
 		frameBuffer = f[0];
 	}
 
