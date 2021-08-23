@@ -149,7 +149,7 @@ class Math {
 		return value >= startRange && value <= endRange;
 	}
 
-	static public inline function smoothStep(x:Float, min:Float, max:Float):Float {
+	static public inline function smoothStep(min:Float, max:Float, x:Float):Float {
 		if (x <= min) {
 			return 0;
 		}
