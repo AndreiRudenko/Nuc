@@ -103,8 +103,8 @@ class SoundChannel implements nuc.audio.AudioChannel {
 	@:void static function finalize(channel:SoundChannel):Void {}
 
 	@:functionCode('
-		channel = NucAudioChannel_create(buffer->self.data);
-		channel->data_length = buffer->self.myLength;
+		channel = NucAudioChannel_create((float*)buffer->self.data);
+		channel->data_length = buffer->byteArrayLength;
 
 		float volume = 1.0f;
 		KINC_ATOMIC_EXCHANGE_FLOAT(&channel->volume, volume);
