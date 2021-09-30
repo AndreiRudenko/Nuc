@@ -31,7 +31,7 @@ class Audio {
 		Log.assert(sound.uncompressedData != null, "Sound uncompressedData must be not null");
 
 		var channel = new SoundChannel();
-		channel.init(sound.uncompressedData, sound.sampleRate, loop);
+		channel.init(sound.uncompressedData, sound.uncompressedData.length, sound.sampleRate, loop);
 		channel.volume = volume;
 		channel.pan = pan;
 		channel.playbackRate = playbackRate;

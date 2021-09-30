@@ -104,7 +104,7 @@ class SoundChannel implements nuc.audio.AudioChannel {
 
 	@:functionCode('
 		channel = NucAudioChannel_create((float*)buffer->self.data);
-		channel->data_length = buffer->byteArrayLength;
+		channel->data_length = size;
 
 		float volume = 1.0f;
 		KINC_ATOMIC_EXCHANGE_FLOAT(&channel->volume, volume);
@@ -126,7 +126,7 @@ class SoundChannel implements nuc.audio.AudioChannel {
 
 		KINC_ATOMIC_EXCHANGE_32(&channel->position , 0);
 	')
-	public function init(buffer:Float32Array, sampleRate:Int, looping:Bool):Void {}
+	public function init(buffer:Float32Array, size:Int, sampleRate:Int, looping:Bool):Void {}
 
 	@:functionCode('KINC_ATOMIC_EXCHANGE_32(&channel->paused, false); KINC_ATOMIC_EXCHANGE_32(&channel->stopped, false); NucAudioChannel_playAgain(channel);')
 	public function play():Void {}
