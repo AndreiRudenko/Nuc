@@ -15,7 +15,7 @@ import nuc.graphics.Pipeline;
 import nuc.graphics.VertexStructure;
 import nuc.graphics.Shaders;
 
-import nuc.math.FastMatrix3;
+import nuc.math.FastTransform2;
 import nuc.math.Vector2;
 import nuc.math.FastVector2;
 import nuc.math.Rectangle;
@@ -113,7 +113,7 @@ class SpriteBatch extends Canvas {
 	var _vertexBuffer:VertexBuffer;
 	var _indexBuffer:IndexBuffer;
 
-	var _projection:FastMatrix3;
+	var _projection:FastTransform2;
 	var _lastTexture:Texture;
 	var _textureDefault:Texture;
 	var _graphics:Graphics;
@@ -131,7 +131,7 @@ class SpriteBatch extends Canvas {
 		_bufferSize = size;
 		_opacityStack = [];
 		_scissorStack = [];
-		_projection = new FastMatrix3();
+		_projection = new FastTransform2();
 		_scissorPool = new DynamicPool<Rectangle>(16, function() { return new Rectangle(); });
 
 		_bakedQuadCache = new CQuad();

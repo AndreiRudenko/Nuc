@@ -11,7 +11,7 @@ import nuc.graphics.Pipeline;
 import nuc.graphics.VertexStructure;
 import nuc.graphics.Shaders;
 
-import nuc.math.FastMatrix3;
+import nuc.math.FastTransform2;
 import nuc.math.Vector2;
 import nuc.math.FastVector2;
 import nuc.math.Rectangle;
@@ -26,27 +26,27 @@ import nuc.utils.Log;
 
 class Canvas {
 
-	public var transform(get, set):FastMatrix3;
-	var _transform:FastMatrix3;
+	public var transform(get, set):FastTransform2;
+	var _transform:FastTransform2;
 	inline function get_transform() return _transform; 
-	function set_transform(v:FastMatrix3):FastMatrix3 {
+	function set_transform(v:FastTransform2):FastTransform2 {
 		return _transform.copyFrom(v);
 	}
 
-	var _transformStack:Array<FastMatrix3>;
-	var _transformPool:DynamicPool<FastMatrix3>;
+	var _transformStack:Array<FastTransform2>;
+	var _transformPool:DynamicPool<FastTransform2>;
 
-	var _invertseTransform:FastMatrix3;
+	var _invertseTransform:FastTransform2;
 	var _invertseTransformDirty:Bool = true;
 
 	public function new() {
-		_transform = new FastMatrix3();
-		_invertseTransform = new FastMatrix3();
+		_transform = new FastTransform2();
+		_invertseTransform = new FastTransform2();
 		_transformStack = [];
-		_transformPool = new DynamicPool<FastMatrix3>(16, function() { return new FastMatrix3(); });
+		_transformPool = new DynamicPool<FastTransform2>(16, function() { return new FastTransform2(); });
 	}
 	
-	public function pushTransform(?m:FastMatrix3) {
+	public function pushTransform(?m:FastTransform2) {
 		_transformStack.push(_transform);
 		if(m == null) m = _transform;
 		_transform = _transformPool.get();
@@ -64,7 +64,7 @@ class Canvas {
 		}
 	}
 
-	public function applyTransform(m:FastMatrix3) {
+	public function applyTransform(m:FastTransform2) {
 		_transform.append(m);
 		onTransformUpdate();
 	}
@@ -88,7 +88,7 @@ class Canvas {
 		if(radians == 0) return;
 		
 		if(ox != 0 || oy != 0) {
-			var m = new FastMatrix3();
+			var m = new FastTransform2();
 			m.translate(ox, oy)
 			.rotate(radians)
 			.prependTranslate(-ox, -oy)
@@ -104,7 +104,7 @@ class Canvas {
 		if(x == 0 && y == 0) return;
 
 		if(ox != 0 || oy != 0) {
-			var m = new FastMatrix3();
+			var m = new FastTransform2();
 			m.translate(ox, oy)
 			.shear(x, y)
 			.prependTranslate(-ox, -oy)

@@ -12,7 +12,7 @@ import nuc.graphics.Pipeline;
 import nuc.graphics.VertexStructure;
 import nuc.graphics.Shaders;
 
-import nuc.math.FastMatrix3;
+import nuc.math.FastTransform2;
 import nuc.math.Vector2;
 import nuc.math.FastVector2;
 import nuc.math.Rectangle;
@@ -121,7 +121,7 @@ class GeomBatch extends Canvas {
 
 	var _inGeometryMode:Bool = false;
 
-	var _projection:FastMatrix3;
+	var _projection:FastTransform2;
 	var _lastTexture:Texture;
 	var _textureDefault:Texture;
 	var _graphics:Graphics;
@@ -136,7 +136,7 @@ class GeomBatch extends Canvas {
 
 		_opacityStack = [];
 		_scissorStack = [];
-		_projection = new FastMatrix3();
+		_projection = new FastTransform2();
 		_scissorPool = new DynamicPool<Rectangle>(16, function() { return new Rectangle(); });
 
 		_vertexBuffer = new VertexBuffer(_verticesMax, _pipelineDefault.inputLayout[0], Usage.DynamicUsage);
