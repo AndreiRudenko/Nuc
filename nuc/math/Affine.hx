@@ -6,7 +6,7 @@ package nuc.math;
 | 0 | 0 | 1  |
  */
  
-class Transform2 {
+class Affine {
 
 	public var a:Float;
 	public var b:Float;
@@ -19,7 +19,7 @@ class Transform2 {
 		set(a, b, c, d, tx, ty);
 	}
 
-	public inline function identity():Transform2 {
+	public inline function identity():Affine {
 		set(
 			1, 0,
 			0, 1,
@@ -29,7 +29,7 @@ class Transform2 {
 		return this;
 	}
 
-	public inline function set(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Transform2 {
+	public inline function set(a:Float, b:Float, c:Float, d:Float, tx:Float, ty:Float):Affine {
 		this.a = a;
 		this.b = b;
 		this.c = c;
@@ -40,21 +40,21 @@ class Transform2 {
 		return this;
 	}
 
-	public inline function translate(x:Float, y:Float):Transform2 {
+	public inline function translate(x:Float, y:Float):Affine {
 		tx += x;
 		ty += y;
 
 		return this;
 	}    
 
-	public inline function prependTranslate(x:Float, y:Float):Transform2 {
+	public inline function prependTranslate(x:Float, y:Float):Affine {
 		tx = a * x + c * y + tx;
 		ty = b * x + d * y + ty;
 
 		return this;
 	}
 	
-	public inline function scale(x:Float, y:Float):Transform2 {
+	public inline function scale(x:Float, y:Float):Affine {
 		a *= x;
 		b *= x;
 		tx *= x;
@@ -66,7 +66,7 @@ class Transform2 {
 	}
 
 	// https://github.com/yoshihitofujiwara/INKjs/blob/master/src/class_geometry/Matrix2.js
-	public inline function shear(x:Float, y:Float):Transform2 {
+	public inline function shear(x:Float, y:Float):Affine {
 		var cy:Float = Math.cos(y);
 		var sy:Float = Math.sin(y);
 		var sx:Float = -Math.sin(x);
@@ -85,7 +85,7 @@ class Transform2 {
 		return this;
 	}
 	
-	public inline function rotate(radians:Float):Transform2 {
+	public inline function rotate(radians:Float):Affine {
 		var sin:Float = Math.sin(radians);
 		var cos:Float = Math.cos(radians);
 
@@ -102,7 +102,7 @@ class Transform2 {
 		return this;
 	}
 
-	public inline function append(m:Transform2):Transform2 {
+	public inline function append(m:Affine):Affine {
         var a1 = a;
         var b1 = b;
         var c1 = c;
@@ -119,7 +119,7 @@ class Transform2 {
 		return this;
 	}
 
-	public inline function prepend(m:Transform2):Transform2 {
+	public inline function prepend(m:Affine):Affine {
 	    var tx1 = tx;
 
 	    if (m.a != 1 || m.b != 0 || m.c != 0 || m.d != 1) {
@@ -138,7 +138,7 @@ class Transform2 {
 	    return this;
 	}
 
-	public inline function orto(left:Float, right:Float, bottom:Float, top:Float):Transform2 {
+	public inline function orto(left:Float, right:Float, bottom:Float, top:Float):Affine {
 		var sx:Float = 1.0 / (right - left);
 		var sy:Float = 1.0 / (top - bottom);
 
@@ -151,7 +151,7 @@ class Transform2 {
 		return this;
 	}
 
-	public inline function invert():Transform2 {
+	public inline function invert():Affine {
 		var a1:Float = a;
 		var b1:Float = b;
 		var c1:Float = c;
@@ -169,7 +169,7 @@ class Transform2 {
 		return this;
 	}
 
-	public inline function copyFrom(other:Transform2):Transform2 {
+	public inline function copyFrom(other:Affine):Affine {
 		set(
 			other.a,  other.b,
 			other.c,  other.d,
@@ -179,11 +179,11 @@ class Transform2 {
 		return this;
 	}
 
-	public inline function clone():Transform2 {
-		return new Transform2(a, b, c, d, tx, ty);
+	public inline function clone():Affine {
+		return new Affine(a, b, c, d, tx, ty);
 	}
 
-	public inline function fromFastTransform2(m:FastTransform2):Transform2 {
+	public inline function fromFastAffine(m:FastAffine):Affine {
 		set(m.a, m.b, m.c, m.d, m.tx, m.ty);
 		return this;
 	}
@@ -196,7 +196,7 @@ class Transform2 {
 		return b * x + d * y + ty;
 	}
 
-	public function setTransform(x:Float, y:Float, angle:Float, sx:Float, sy:Float, ox:Float, oy:Float, kx:Float, ky:Float):Transform2 {
+	public function setTransform(x:Float, y:Float, angle:Float, sx:Float, sy:Float, ox:Float, oy:Float, kx:Float, ky:Float):Affine {
 		var sin:Float = Math.sin(angle);
 		var cos:Float = Math.cos(angle);
 

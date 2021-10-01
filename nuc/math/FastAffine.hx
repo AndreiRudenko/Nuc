@@ -9,7 +9,7 @@ import kha.FastFloat;
 | 0 | 0 | 1  |
  */
 
-abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.math.FastMatrix3 {
+abstract FastAffine(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.math.FastMatrix3 {
 
 	public var a(get, set):FastFloat;
 	inline function get_a() return this._00; 
@@ -40,7 +40,7 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 		set(a, b, c, d, tx, ty);
 	}
 
-	public inline function identity():FastTransform2 {
+	public inline function identity():FastAffine {
 		set(
 			1, 0,
 			0, 1,
@@ -50,7 +50,7 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 		return  this;
 	}
 
-	public inline function set(a:FastFloat, b:FastFloat, c:FastFloat, d:FastFloat, tx:FastFloat, ty:FastFloat):FastTransform2 {
+	public inline function set(a:FastFloat, b:FastFloat, c:FastFloat, d:FastFloat, tx:FastFloat, ty:FastFloat):FastAffine {
 		set_a(a);
 		set_b(b);
 		set_c(c);
@@ -61,21 +61,21 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 		return this;
 	}
 
-	public inline function translate(x:FastFloat, y:FastFloat):FastTransform2 {
+	public inline function translate(x:FastFloat, y:FastFloat):FastAffine {
 		tx += x;
 		ty += y;
 
 		return this;
 	}    
 
-	public inline function prependTranslate(x:FastFloat, y:FastFloat):FastTransform2 {
+	public inline function prependTranslate(x:FastFloat, y:FastFloat):FastAffine {
 		tx = a * x + c * y + tx;
 		ty = b * x + d * y + ty;
 
 		return this;
 	}
 	
-	public inline function scale(x:FastFloat, y:FastFloat):FastTransform2 {
+	public inline function scale(x:FastFloat, y:FastFloat):FastAffine {
 		a *= x;
 		b *= x;
 		tx *= x;
@@ -87,7 +87,7 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 	}
 
 	// https://github.com/yoshihitofujiwara/INKjs/blob/master/src/class_geometry/Matrix2.js
-	public inline function shear(x:FastFloat, y:FastFloat):FastTransform2 {
+	public inline function shear(x:FastFloat, y:FastFloat):FastAffine {
 		var cy:FastFloat = Math.cos(y);
 		var sy:FastFloat = Math.sin(y);
 		var sx:FastFloat = -Math.sin(x);
@@ -106,7 +106,7 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 		return this;
 	}
 	
-	public inline function rotate(radians:FastFloat):FastTransform2 {
+	public inline function rotate(radians:FastFloat):FastAffine {
 		var sin:FastFloat = Math.sin(radians);
 		var cos:FastFloat = Math.cos(radians);
 
@@ -123,7 +123,7 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 		return this;
 	}
 
-	public inline function append(m:FastTransform2):FastTransform2 {
+	public inline function append(m:FastAffine):FastAffine {
         var a1:FastFloat = a;
         var b1:FastFloat = b;
         var c1:FastFloat = c;
@@ -140,7 +140,7 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 		return this;
 	}
 
-	public inline function prepend(m:FastTransform2):FastTransform2 {
+	public inline function prepend(m:FastAffine):FastAffine {
 	    var tx1:FastFloat = tx;
 
 	    if (m.a != 1 || m.b != 0 || m.c != 0 || m.d != 1) {
@@ -159,7 +159,7 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 	    return this;
 	}
 
-	public inline function orto(left:FastFloat, right:FastFloat, bottom:FastFloat, top:FastFloat):FastTransform2 {
+	public inline function orto(left:FastFloat, right:FastFloat, bottom:FastFloat, top:FastFloat):FastAffine {
 		var sx:FastFloat = 1.0 / (right - left);
 		var sy:FastFloat = 1.0 / (top - bottom);
 
@@ -172,7 +172,7 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 		return this;
 	}
 
-	public inline function invert():FastTransform2 {
+	public inline function invert():FastAffine {
 		var a1:FastFloat = a;
 		var b1:FastFloat = b;
 		var c1:FastFloat = c;
@@ -190,7 +190,7 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 		return this;
 	}
 
-	public inline function copyFrom(other:FastTransform2):FastTransform2 {
+	public inline function copyFrom(other:FastAffine):FastAffine {
 		set(
 			other.a,  other.b,
 			other.c,  other.d,
@@ -200,11 +200,11 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 		return this;
 	}
 
-	public inline function clone():FastTransform2 {
-		return new FastTransform2(a, b, c, d, tx, ty);
+	public inline function clone():FastAffine {
+		return new FastAffine(a, b, c, d, tx, ty);
 	}
 
-	public inline function fromTransform2(m:Transform2):FastTransform2 {
+	public inline function fromAffine(m:Affine):FastAffine {
 		set(m.a, m.b, m.c, m.d, m.tx, m.ty);
 
 		return this;
@@ -218,7 +218,7 @@ abstract FastTransform2(kha.math.FastMatrix3) from kha.math.FastMatrix3 to kha.m
 		return b * x + d * y + ty;
 	}
 	
-	public inline function setTransform(x:FastFloat, y:FastFloat, angle:FastFloat, sx:FastFloat, sy:FastFloat, ox:FastFloat, oy:FastFloat, kx:FastFloat, ky:FastFloat):FastTransform2 {
+	public inline function setTransform(x:FastFloat, y:FastFloat, angle:FastFloat, sx:FastFloat, sy:FastFloat, ox:FastFloat, oy:FastFloat, kx:FastFloat, ky:FastFloat):FastAffine {
 		var sin:FastFloat = Math.sin(angle);
 		var cos:FastFloat = Math.cos(angle);
 

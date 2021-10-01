@@ -15,7 +15,7 @@ import nuc.graphics.Texture;
 import nuc.graphics.Font;
 import nuc.graphics.Color;
 
-import nuc.math.FastTransform2;
+import nuc.math.FastAffine;
 import nuc.math.Vector2;
 import nuc.math.FastVector2;
 import nuc.math.Rectangle;
@@ -38,7 +38,7 @@ class Graphics {
 
 	static var vertexBuffer:VertexBuffer;
 	static var indexBuffer:IndexBuffer;
-	static var blitProjection:FastTransform2;
+	static var blitProjection:FastAffine;
 
 	static public function setup() {
 		var structure = new VertexStructure();
@@ -50,7 +50,7 @@ class Graphics {
 		pipelineTextured.setBlending(BlendFactor.BlendOne, BlendFactor.InverseSourceAlpha, BlendOperation.Add);
 		pipelineTextured.compile();
 
-		blitProjection = new FastTransform2();
+		blitProjection = new FastAffine();
 		initBuffers();
 	}
 
