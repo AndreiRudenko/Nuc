@@ -24,6 +24,9 @@ class Vector2 {
 	public var lengthSq(get, never):Float;
 	inline function get_lengthSq() return x * x + y * y;
 
+	public var angle(get, never):Float;
+	inline function get_angle() return Math.atan2(y, x); 
+	
 	public inline function new(x:Float = 0, y:Float = 0) {
 		_x = x;
 		_y = y;
@@ -152,7 +155,7 @@ class Vector2 {
 	}
 	
 	// return angle in radians
-	public inline function angle2D(other:Vector2):Float {
+	public inline function angleFrom(other:Vector2):Float {
 		return Math.atan2(other.y - y, other.x - x);
 	}
 

@@ -14,10 +14,17 @@ abstract FastVector2(kha.math.FastVector2) from kha.math.FastVector2 to kha.math
 
 	public var length(get, set):FastFloat;
 	inline function get_length() return this.length; 
-	inline function set_length(v:FastFloat) return this.length = v; 
-	
+	inline function set_length(v:Float) {
+		normalize();
+		multiplyScalar(v);
+		return v;
+	}
+
 	public var lengthSq(get, never):FastFloat;
 	inline function get_lengthSq() return x * x + y * y;
+
+	public var angle(get, never):FastFloat;
+	inline function get_angle() return Math.atan2(y, x); 
 
 	public inline function new(x:FastFloat, y:FastFloat) {
 		this = new kha.math.FastVector2(x, y);
@@ -153,7 +160,7 @@ abstract FastVector2(kha.math.FastVector2) from kha.math.FastVector2 to kha.math
 	}
 
 	// return angle in radians
-	public inline function angle2D(other:FastVector2):FastFloat {
+	public inline function angleFrom(other:FastVector2):FastFloat {
 		return Math.atan2(other.y - y, other.x - x);
 	}
 
