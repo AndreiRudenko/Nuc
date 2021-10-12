@@ -102,8 +102,14 @@ class Emitter {
 
 	function removeHandler<T>(event:EventType<T>, handler:(e:T)->Void) {
 		var list = bindings.get(event);
-		for (i in 0...list.length) {
-			if(list[i].callback == handler) list.splice(i, 1);
+		
+		var i = 0;
+		while(i < list.length) {
+			if(list[i].callback == handler) {
+				list.splice(i, 1);
+			} else {
+				i++;
+			}
 		}
 
 		if(list.length == 0) bindings.remove(event);
