@@ -5,32 +5,32 @@ Build on top of [Kha](https://github.com/Kode/Kha) framework using [Haxe](https:
 - Install [Kha](https://github.com/Kode/Kha/wiki/Getting-Started)
 - Init Kha Project
 - Clone Nuc to your project folder:
-    ```bash
-    git clone https://github.com/nuclibs/Nuc.git
-    ```
+	```bash
+	git clone https://github.com/nuclibs/Nuc.git
+	```
 - Open [khafile.js](https://github.com/Kode/Kha/wiki/khafile.js) from your project folder and add this lines:
 
-    ```js
-    let p = new Project("New Project");
+	```js
+	let p = new Project("New Project");
 
-    await p.addProject("Nuc");
+	await p.addProject("Nuc");
 
-    p.addSources("Sources");
-    p.addShaders("Shaders");
-    p.addAssets(
-        "Assets/**",
-        {
-            nameBaseDir: "Assets", 
-            destination: "Assets/{dir}/{name}", 
-            name: "{dir}/{name}", 
-            noprocessing: true, 
-            notinlist: true
-        }
-    );
+	p.addSources("Sources");
+	p.addShaders("Shaders");
+	p.addAssets(
+		"Assets/**",
+		{
+			nameBaseDir: "Assets", 
+			destination: "Assets/{dir}/{name}", 
+			name: "{dir}/{name}", 
+			noprocessing: true, 
+			notinlist: true
+		}
+	);
 
-    resolve(p);
-    ```
-    
+	resolve(p);
+	```
+	
 ## Minimal example
 ```haxe
 
@@ -44,9 +44,9 @@ import nuc.graphics.Texture;
 
 class Game {
 
-    var camera:Camera;
-    var sb:SpriteBatch;
-    var parrotImage:Texture;
+	var camera:Camera;
+	var sb:SpriteBatch;
+	var parrotImage:Texture;
 
 	public function new() {
 		Resources.loadAll(
@@ -66,7 +66,7 @@ class Game {
 
 		sb = new SpriteBatch();
 
-        parrotImage = Resources.getTexture('parrot.png');
+		parrotImage = Resources.getTexture('parrot.png');
 	}
 
 	function update(elapsed:Float) {
@@ -76,7 +76,7 @@ class Game {
 	function render(e:RenderEvent) {
 		camera.begin();
 
-        sb.drawImage(parrotImage);
+		sb.drawImage(parrotImage);
 
 		camera.end();
 	}
