@@ -2,8 +2,6 @@ Nuc is a lightweight cross-platform, 2d game framework.
 Build on top of [Kha](https://github.com/Kode/Kha) framework using [Haxe](https://haxe.org/) language. 
  
 ## Installation
-
----
 - Install [Kha](https://github.com/Kode/Kha/wiki/Getting-Started)
 - Init Kha Project
 - Clone Nuc to your project folder:
@@ -34,7 +32,6 @@ Build on top of [Kha](https://github.com/Kode/Kha) framework using [Haxe](https:
     ```
     
 ## Minimal example
----
 ```haxe
 
 import nuc.Resources;
