@@ -1,0 +1,11 @@
+#!/bin/bash
+read -p "TTF file: "  ttfFile
+# read -p "Output: "  outFolder
+read -p "Font size: "  fontSize
+# fileName="$(basename -- $ttfFile)"
+outFilePath="${ttfFile%.*}$fontSize"
+# outFilePath="${fileName%.*}"
+# outFilePath="$outFolder/$fileName"
+echo $outFilePath
+./fontbm --font-file $ttfFile --output $outFilePath --kerning-pairs disabled --font-size $fontSize --spacing-vert 2 --spacing-horiz 2 --data-format json
+# exit 0

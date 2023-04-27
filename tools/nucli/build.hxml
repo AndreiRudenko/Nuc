@@ -1,5 +1,0 @@
--main CLI
--cp src
--lib nucml
--neko ../../run.n
--dce full

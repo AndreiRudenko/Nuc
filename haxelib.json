@@ -1,9 +1,9 @@
 {
-	"name": "nuc",
-	"url": "https://github.com/nuclibs/nuc",
+	"name": "Nuc",
+	"url": "https://github.com/nuclibs/Nuc",
 	"license": "MIT",
 	"tags": ["game", "engine", "framework", "cross", "2d", "nuc"],
-	"description": "2d game framework",
+	"description": "2D Game Framework",
 	"version": "0.0.1",
 	"releasenote": "",
 	"contributors": ["AndreiRudenko"]
