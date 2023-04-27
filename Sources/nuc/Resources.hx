@@ -21,7 +21,7 @@ class Resources {
 	static public var cache(default, null):Map<String, Resource>;
 	static public var stats:ResourceStats;
 
-	static var assetsPath:String = 'assets';
+	static var assetsPath:String = 'Assets';
 
 	static function init() {
 		cache = new Map();

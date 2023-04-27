@@ -7,9 +7,8 @@ p.addShaders("Sources/Shaders/**");
 p.addAssets(
     "Assets/**", 
     {
-        nameBaseDir: "assets", 
-        destination: "assets/{dir}/{name}", 
-        name: "{dir}/{name}", 
+        nameBaseDir: "Assets", 
+        destination: "Assets/{name}", 
         noprocessing: true, 
         notinlist: true
     }
