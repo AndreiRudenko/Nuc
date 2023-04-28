@@ -1,7 +1,7 @@
 {
 	"name": "Nuc",
 	"url": "https://github.com/nuclibs/Nuc",
-	"license": "MIT",
+	"license": "zlib",
 	"tags": ["game", "engine", "framework", "cross", "2d", "nuc"],
 	"description": "2D Game Framework",
 	"version": "0.0.1",
