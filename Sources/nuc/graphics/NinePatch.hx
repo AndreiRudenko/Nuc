@@ -4,6 +4,8 @@ class NinePatch {
 
 	public var visible:Bool = true;
 
+	public var color:Color = Color.WHITE;
+
 	public var x(get, set):Float;
 	var _x:Float;
 	inline function get_x() return _x;
@@ -148,6 +150,8 @@ class NinePatch {
 			calcPatches();
 			dirty = false;
 		}
+
+		batch.color = color;
 
 		if (rotation == 0) {
 			batch.drawImage(texture, x, y, leftScaled, topScaled, 0, 0, left, top);
