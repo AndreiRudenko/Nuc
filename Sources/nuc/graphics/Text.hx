@@ -392,6 +392,25 @@ class Text {
 		}
 	}
 
+	public function clone():Text {
+		var t = new Text(font);
+		t.text = text;
+		t.x = x;
+		t.y = y;
+		t.width = width;
+		t.height = height;
+		t.fontSize = fontSize;
+		t.horizontalAlign = horizontalAlign;
+		t.verticalAlign = verticalAlign;
+		t.color = color;
+		t.visible = visible;
+		t.tracking = tracking;
+		t.leading = leading;
+		t.tabSize = tabSize;
+
+		return t;
+	}
+
 }
 
 class CharInfo {

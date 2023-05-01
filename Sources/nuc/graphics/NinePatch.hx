@@ -179,5 +179,19 @@ class NinePatch {
 			batch.drawImage(texture, midRight, midBottom, rightScaled, bottomScaled, rotation, 0, 0, 0, 0, texMidRight, texMidBottom, right, bottom);
 		}
 	}
+	
+	public function clone():NinePatch {
+		var n = new NinePatch(texture, left, right, top, bottom);
+		n.visible = visible;
+		n.x = x;
+		n.y = y;
+		n.width = width;
+		n.height = height;
+		n.scale = scale;
+		n.color = color;
+		n.rotation = rotation;
+		
+		return n;
+	}
 
 }

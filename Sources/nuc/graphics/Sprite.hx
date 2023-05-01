@@ -123,6 +123,27 @@ class Sprite {
 		}
 
 	}
+
+	public function clone():Sprite {
+		var s = new Sprite(texture, width, height);
+		s.visible = visible;
+		s.x = x;
+		s.y = y;
+		s.originX = originX;
+		s.originY = originY;
+		s.rotation = rotation;
+		s.scaleX = scaleX;
+		s.scaleY = scaleY;
+		s.regionX = regionX;
+		s.regionY = regionY;
+		s.regionWidth = regionWidth;
+		s.regionHeight = regionHeight;
+		s.flipX = flipX;
+		s.flipY = flipY;
+		s.color = color;
+		
+		return s;
+	}
 	
 }
 
