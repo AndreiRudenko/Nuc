@@ -30,7 +30,7 @@ using StringTools;
 class Graphics {
 
 	static public var pipelineTextured(default, null):Pipeline;
-	static public var frameBuffer(default, null):Framebuffer;
+	static var frameBuffer(default, null):Framebuffer;
 
 	static var vertexBuffer:VertexBuffer;
 	static var indexBuffer:IndexBuffer;

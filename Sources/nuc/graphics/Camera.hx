@@ -297,7 +297,7 @@ class Camera {
 
 	function setupMatrices() {
 		if (target == null) {
-			projectionViewMatrix.orthographic(0, Graphics.frameBuffer.width, Graphics.frameBuffer.height, 0);
+			projectionViewMatrix.orthographic(0,Window.width,Window.height, 0);
 		} else {
 			var tw = target.widthActual;
 			var th = target.heightActual;
