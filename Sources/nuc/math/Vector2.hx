@@ -140,6 +140,14 @@ class Vector2 {
 		return set(ca * x - sa * y, sa * x + ca * y);
 	}
 
+	public inline function rotateAround(center:Vector2, radians:Float) {
+		var ca = Math.cos(radians);
+		var sa = Math.sin(radians);
+		var cx = center.x;
+		var cy = center.y;
+		return set(ca * (x - cx) - sa * (y - cy) + cx, sa * (x - cx) + ca * (y - cy) + cy);
+	}
+
 	public inline function lerp(other:Vector2, t:Float) {
 		return set(x + (other.x - x) * t, y + (other.y - y) * t);
 	}
