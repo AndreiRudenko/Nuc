@@ -13,7 +13,7 @@ import nuc.Audio;
 #include <kinc/math/core.h>
 #include <math.h>
 #include <nuclib/audio1.h>
-#include <kinc/audio1/stb_vorbis.c>
+#include <kinc/libs/stb_vorbis.c>
 ')
 @:headerCode('struct NucStreamChannel;')
 @:headerClassCode("NucStreamChannel *channel;")
